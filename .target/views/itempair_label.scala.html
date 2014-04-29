@@ -1,0 +1,36 @@
+@(attributes:List[String], itempair:com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair)
+<html>
+    @part_head()
+    <body>
+        @part_header()
+        
+        <!-- Item Pair information -->
+        <table class="table table-striped tabled-condensed">
+            <thead>
+                <tr>
+                    <th>Attribute</th>
+                    <th>Item1 Value</th>
+                    <th>Item2 Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for(attribute <- attributes) {
+                    <tr>
+                        <td>@attribute</td>
+                        <td>@itempair.getItemAValByAttr(attribute)</td>
+                        <td>@itempair.getItemBValByAttr(attribute)</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        
+        <form role="form" method="post" action="/">
+            <legend>Are these same items ?</legend>
+            <div class="row">
+                <div class="span4"><button id="match_btn" class="btn btn-success">YES</button></div>
+                <div class="span4"><button id="mismatch_btn" class="btn btn-danger">NO</button></div>
+                <div class="span4"><button id="unknown_btn" class="btn btn-warning">NOT SURE</button></div>
+            </div>
+        </form>
+    </body>
+</html>

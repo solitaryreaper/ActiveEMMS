@@ -1,0 +1,191 @@
+@(project:String)
+<html>
+    @part_head()
+    <body>
+        @part_header()
+        
+        <div id="results_loading" style='display: none;'>
+            <img src="http://barracuda.botany.wisc.edu/MaizeWebApp/assets/img/loading.gif">
+        </div>
+            
+        <div class="navbar container">  
+            <ul class="breadcrumb">
+              <li><a href="/"><i class="fa fa-home fa-2x"></i></a> <span class="divider">/</span></li>
+              <li><a href="#">@project</a> <span class="divider">/</span></li>
+              <li class="active" id="job_id"></li>
+            </ul>               
+        </div>              
+                    
+        <div class="container">
+            <form class="form-horizontal" id="job_form" method="post" action="" role="form" 
+            enctype="multipart/form-data" onsubmit="return show_progress_box()">
+            
+               <legend>Job Metadata</legend>
+               <fieldset>
+               <div class="control-row">               
+                   <div class="control-group span4">
+                       <label class="control-label" for="job_name"><b>Name</b></label>
+                       <div class="controls">
+                           <input type="text" id="job_name" name="job_name" required>
+                       </div>
+                   </div>
+                   <div class="control-group span6">
+                       <label class="control-label" for="job_desc"><b>Description</b></label>
+                       <div class="controls">
+                           <textarea id="job_desc" name="job_desc" rows="3"></textarea>
+                       </div>
+                   </div>
+               </div>                  
+               </fieldset>
+               
+               <legend>Dataset</legend>
+               <fieldset>
+               
+                  <div class="control-group">  
+                    <label class="control-label" for="dataset_name"><b>Name</b></label>  
+                    <div class="controls">  
+                      <input type="text" id="dataset_name" name="dataset_name" required>  
+                    </div>  
+                  </div>
+                  
+                   <div class="control-group">
+                       <label class="control-label" for="learning_type"><b>Learning Method</b></label>
+                       <div class="controls">
+                           <select id="learning_type" name="learning_type">
+                                <option value="active" selected="selected">Active Learning</option>
+                                <option value="passive">Passive Learning</option>
+                           </select>
+                       </div>
+                   </div>
+                                  
+                   <div id="passive_learning_files" class="control-group">
+                       <label class="control-label" for="dataset_format"><b>Format</b></label>
+                       <div class="controls">
+                           <select id="dataset_format" name="dataset_format">
+                                <option value="item_file_format" selected="selected">2 Item Files(Source, Target) , Gold File</option>
+                                <option value="itempair_file_format">1 ItemPair File, 1 Gold File</option>
+                           </select>
+                       </div>
+                   </div>
+                   
+                 <div id="item_files_div">                                 
+                     <div class="control-group">  
+                        <label class="control-label" for="source_data_file_path"><b>Source Item File</b></label>  
+                        <div class="controls">  
+                          <input class="input-file" id="source_data_file_path" name="source_data_file_path" type="file">  
+                        </div>  
+                      </div>
+                     <div class="control-group">  
+                        <label class="control-label" for="target_data_file_path"><b>Target Item File</b></label>  
+                        <div class="controls">  
+                          <input class="input-file" id="target_data_file_path" name="target_data_file_path" type="file">  
+                        </div>  
+                      </div>
+                  </div>
+                  
+                 <div class="control-group" id="itempair_file_div">  
+                    <label class="control-label" for="item_pair_file_path"><b>Item Pair File</b></label>  
+                    <div class="controls">  
+                      <input class="input-file" id="item_pair_file_path" name="item_pair_file_path" type="file">  
+                    </div>  
+                  </div>
+                                    
+                 <div class="control-group">  
+                    <label class="control-label" for="gold_data_file_path"><b>Gold Pair File</b></label>  
+                    <div class="controls">  
+                      <input class="input-file" id="gold_data_file_path" name="gold_data_file_path" type="file" required>  
+                    </div>  
+                  </div>
+
+                <div class="control-row">
+                   <div class="control-group span6">
+                       <label class="control-label" for="column_delimiter"><b>Column Delimiter</b></label>
+                       <div class="controls">
+                           <input type="text" id="column_delimiter" name="column_delimiter" value="," required>
+                       </div>
+                   </div>
+                   <div class="control-group span4">
+                       <label class="control-label" for="value_delimiter"><b>Set Value Delimiter</b></label>
+                       <div class="controls">
+                           <input type="text" id="value_delimiter" name="value_delimiter" value="," required>
+                       </div>
+                   </div>
+                </div>
+                
+                 <div class="controls-row">  
+                 <div class="control-group span6">
+                     <label class="control-label" for="attributes_to_evaluate"><b>Attributes to Evaluate</b></label>
+                     <div class="controls">
+                         <input type="text" id="attributes_to_evaluate" name="attributes_to_evaluate" required >
+                     </div>
+                 </div>
+                 <div class="control-group span4">
+                     <label class="control-label" for="set_valued_attributes"><b>Set-valued Attributes</b></label>
+                     <div class="controls">
+                         <input type="text" id="set_valued_attributes" name="set_valued_attributes" >
+                     </div>
+                 </div>
+                 </div>                                                                                                                                        
+               </fieldset>
+               
+               <legend>Desired Rule Metrics</legend>
+               <fieldset>
+               <div class="controls-row">              
+                   <div class="control-group span6">
+                       <label class="control-label" for="precision"><b>Precision(%)</b></label>
+                       <div class="controls">
+                           <input type="text" id="precision" name="precision" value="98">
+                       </div>
+                   </div>
+                   <div class="control-group span4">
+                       <label class="control-label" for="coverage"><b>Coverage(%)</b></label>
+                       <div class="controls">
+                           <input type="text" id="coverage" name="coverage" value="20">
+                       </div>
+                   </div>
+               </div>                                                      
+               </fieldset>
+               
+               <div class="form-actions">  
+                   <button id="job_submit" type="submit" class="btn btn-primary">Generate Matching Rules</button>  
+               </div>                 
+            </form>
+        </div>
+        
+        <script>
+        var DEFAULT_ITEM_FILE_COL_DELIMITER = ",";
+        var DEFAULT_ITEMPAIR_FILE_COL_DELIMITER = "|#";
+        
+        $(document).ready(function() {
+            // To ensure that the loading gif is hidden when the page is initially loaded
+            $('#results_loading').hide();
+            
+            $('#itempair_file_div').hide();
+        });
+        
+        $("#dataset_format").on("change", function()  {
+            var dataFormatType = $("#dataset_format").val();
+            if(dataFormatType == "itempair_file_format") {
+                $("#itempair_file_div").show();
+                $("#item_files_div").hide();
+                $("#column_delimiter").val(DEFAULT_ITEMPAIR_FILE_COL_DELIMITER);
+            }
+            else {
+                $("#itempair_file_div").hide();
+                $("#item_files_div").show();
+                $("#column_delimiter").val(DEFAULT_ITEM_FILE_COL_DELIMITER);
+            }
+        });
+                
+        function show_progress_box()
+        {
+            // make the background translucent and show a loading gif to make
+            // the web application interactive and let the user know that some
+            // processing is going on in the background.
+            $("#form_container").css({ opacity: 0.25 });
+            $('#results_loading').show();           
+        }
+           
+        </script>
+    </body>
+</html>
