@@ -46,15 +46,15 @@ public class JobController extends Controller {
 	 */
     public static Result submitJob()
     {
-    	DynamicForm form = form().bindFromRequest();
-    	Logger.info("PARAMETERS : " + form.data().toString());
+    	DynamicForm dynamicForm = form().bindFromRequest();
+    	Logger.info("PARAMETERS : " + dynamicForm.data().toString());
     	
-    	boolean isActiveLearner = form.get(Constants.PARAM_LEARNING_METHOD).equals(Constants.ACTIVE_LEARNER);
-    	boolean isItemPairFormat = form.get(Constants.PARAM_DATA_FORMAT).equals(Constants.ITEM_PAIR_FILE_FORMAT);
+    	boolean isActiveLearner = dynamicForm.get(Constants.PARAM_LEARNING_METHOD).equals(Constants.ACTIVE_LEARNER);
+    	boolean isItemPairFormat = dynamicForm.get(Constants.PARAM_DATA_FORMAT).equals(Constants.ITEM_PAIR_FILE_FORMAT);
     	
     	JobMetadata jobMeta = new JobMetadata();
-    	jobMeta.setDatasetName(form.get(Constants.PARAM_DATASET_NAME));
-    	jobMeta.setAttributesToEvaluate(form.get(Constants.PARAM_ATTRIBUTES_TO_EVALUATE));
+    	jobMeta.setDatasetName(dynamicForm.get(Constants.PARAM_DATASET_NAME));
+    	jobMeta.setAttributesToEvaluate(dynamicForm.get(Constants.PARAM_ATTRIBUTES_TO_EVALUATE));
     	
     	MultipartFormData body = request().body().asMultipartFormData();
     	if(!isItemPairFormat) {
@@ -72,8 +72,8 @@ public class JobController extends Controller {
 		FilePart goldFilePath = body.getFile(Constants.PARAM_GOLD_FILE_PATH);
     	jobMeta.setGoldFile(goldFilePath.getFile().getAbsolutePath());
 
-    	jobMeta.setDesiredPrecision(form.get(Constants.PARAM_PRECISION));
-    	jobMeta.setDesiredCoverage(form.get(Constants.PARAM_COVERAGE));
+    	jobMeta.setDesiredPrecision(dynamicForm.get(Constants.PARAM_PRECISION));
+    	jobMeta.setDesiredCoverage(dynamicForm.get(Constants.PARAM_COVERAGE));
     	
     	if(isActiveLearner) {
     		return invokeActiveLearner(jobMeta, isItemPairFormat);

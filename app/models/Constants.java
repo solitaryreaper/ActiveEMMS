@@ -13,10 +13,10 @@ public class Constants {
 	public static final String PARAM_GOLD_FILE_PATH = "gold_data_file_path";
 	public static final String PARAM_PRECISION = "precision";
 	public static final String PARAM_COVERAGE = "coverage";
-	public static final String PARAM_LEARNING_METHOD = "learning_method";
+	public static final String PARAM_LEARNING_METHOD = "learning_type";
 	
-	public static final String ACTIVE_LEARNER = "Active Learning";
-	public static final String PASSIVE_LEARNER = "Passive Learning";
+	public static final String ACTIVE_LEARNER = "active";
+	public static final String PASSIVE_LEARNER = "passive";
 	
 	public static final String PARAM_DATA_FORMAT = "dataset_format";
 	public static final String ITEM_FILE_FORMAT = "item_file_format";
