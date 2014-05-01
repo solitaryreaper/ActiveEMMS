@@ -21,6 +21,11 @@ public class Project extends Model {
 	public String name;
 	public String description;
 	
-	@OneToMany(mappedBy="ptoject")
+	@OneToMany(mappedBy="project")
 	public List<Job> jobs;
+	
+	/**
+     * Generic query helper for entity Project with id Long
+     */
+    public static Finder<Long,Project> find = new Finder<Long,Project>(Long.class, Project.class);	
 }

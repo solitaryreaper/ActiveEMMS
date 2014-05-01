@@ -23,4 +23,8 @@ public class ItemData extends Model {
 	@ManyToOne
 	public Job job;
 
+	/**
+     * Generic query helper for entity Itemdata with id Long
+     */
+    public static Finder<Long,ItemData> find = new Finder<Long,ItemData>(Long.class, ItemData.class);	
 }

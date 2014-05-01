@@ -68,5 +68,9 @@ public class Job extends Model {
 	
 	public JobStatus status = JobStatus.INITIALIZED;
 	
+	/**
+     * Generic query helper for entity Job with id Long
+     */
+    public static Finder<Long,Job> find = new Finder<Long,Job>(Long.class, Job.class);	
 	
 }

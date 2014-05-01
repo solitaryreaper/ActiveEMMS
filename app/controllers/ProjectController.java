@@ -1,16 +1,13 @@
 package controllers;
 
-import java.util.List;
-
-import com.google.common.collect.Lists;
-
+import static play.data.Form.form;
 import play.Logger;
 import play.data.DynamicForm;
 import play.mvc.Controller;
 import play.mvc.Result;
+
 import views.html.project_setup;
 import views.html.job_setup;
-import static play.data.Form.form;
 
 /**
  * Controller class to coordinate all actions related to entity matching project management.

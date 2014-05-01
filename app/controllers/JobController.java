@@ -2,24 +2,34 @@ package controllers;
 
 import static play.data.Form.form;
 
+import java.io.File;
 import java.util.List;
 
 import models.Constants;
+import play.data.DynamicForm;
+import play.mvc.Controller;
+import play.mvc.Http.MultipartFormData;
+import play.mvc.Http.MultipartFormData.FilePart;
+import play.mvc.Result;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.walmartlabs.productgenome.rulegenerator.EMMSWorkflowDriver;
 import com.walmartlabs.productgenome.rulegenerator.config.JobMetadata;
 import com.walmartlabs.productgenome.rulegenerator.model.analysis.DatasetEvaluationSummary;
 import com.walmartlabs.productgenome.rulegenerator.model.analysis.JobEvaluationSummary;
 import com.walmartlabs.productgenome.rulegenerator.model.analysis.RuleEvaluationSummary;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Dataset;
+import com.walmartlabs.productgenome.rulegenerator.model.data.DatasetNormalizerMeta;
+import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair;
+import com.walmartlabs.productgenome.rulegenerator.utils.parser.DataParser;
+import com.walmartlabs.productgenome.rulegenerator.utils.parser.ItemDataParser;
+import com.walmartlabs.productgenome.rulegenerator.utils.parser.ItemPairDataParser;
+
+import views.html.job_matching_results;
+import views.html.itempair_label;
 
 import play.Logger;
-import play.data.DynamicForm;
-import play.mvc.Controller;
-import play.mvc.Result;
-import play.mvc.Http.MultipartFormData;
-import play.mvc.Http.MultipartFormData.FilePart;
-import views.html.job_matching_results;
 
 /**
  * Controller classe to process the current entity matching job.
@@ -71,6 +81,7 @@ public class JobController extends Controller {
     	else {
     		return invokePassiveLearner(jobMeta);
     	}
+
     }
     
     /**
@@ -80,17 +91,45 @@ public class JobController extends Controller {
     public static Result invokeActiveLearner(JobMetadata jobMeta, boolean isItemPairFormat)
     {
     	Dataset dataset = null;
-    	return ok();
-    	/*
+    	DataParser parser = null;
+    	
+		BiMap<String, String> schemaMap = getSchemaMap(jobMeta.getAttributesToEvaluate());
+		DatasetNormalizerMeta normalizerMeta = new DatasetNormalizerMeta(schemaMap);
+		
+		String datasetName = jobMeta.getDatasetName();
+		File goldFile = new File(jobMeta.getGoldFile());
     	if(isItemPairFormat) {
+    		File itemPairFile = new File(jobMeta.getItemPairFile());
     		
+			parser = new ItemPairDataParser();
+			dataset = parser.parseData(datasetName, itemPairFile, goldFile, normalizerMeta);
     	}
     	else {
-    		
+			File srcFile = new File(jobMeta.getSourceFile());
+			File tgtFile = new File(jobMeta.getTargetFile());
+			
+			parser = new ItemDataParser();
+			dataset = parser.parseData(datasetName, srcFile, tgtFile, goldFile, normalizerMeta);    		
     	}
-    	*/
+    	
+    	Logger.info("Found " + dataset.getItemPairs().size() + " itempairs ..");
+    	
+    	ItemPair pair = dataset.getItemPairs().get(0);
+    	List<String> attributes = dataset.getAttributes();
+    	
+    	return ok(itempair_label.render(attributes, pair));
     }
     
+	private static BiMap<String, String> getSchemaMap(List<String> attributesToEvaluate)
+	{
+		BiMap<String, String> schemaMap = HashBiMap.create();
+		for(String attribute : attributesToEvaluate) {
+			schemaMap.put(attribute, attribute);
+		}
+		
+		return schemaMap;
+	}
+	
     /**
      * Invokes passive rule learning algorithm on the train data and generates rules satisfying
      * the precision and recall constraints.
