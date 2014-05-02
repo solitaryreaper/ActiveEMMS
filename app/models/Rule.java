@@ -17,8 +17,8 @@ public class Rule extends Model {
 	public Long id;
 
 	public String name;
-	public double precision;
-	public double coverage;
+	public double precisionMetric;
+	public double coverageMetric;
 	
 	@ManyToOne
 	public Job job;

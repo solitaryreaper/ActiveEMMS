@@ -41,8 +41,8 @@ create table project (
 create table rule (
   id                        bigint auto_increment not null,
   name                      varchar(255),
-  precision                 double,
-  coverage                  double,
+  precision_metric          double,
+  coverage_metric           double,
   job_id                    bigint,
   constraint pk_rule primary key (id))
 ;
