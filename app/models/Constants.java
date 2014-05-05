@@ -33,4 +33,9 @@ public class Constants {
 	public static final String DB_JOB_TABLE = "emms.job";
 	public static final String DB_USER_TABLE = "emms.user";
 	public static final String DB_PROJECT_TO_JOBS_TABLE = "emms.project_to_jobs_map";
+	
+	public static final String CACHE_PROJECT = "project";
+	public static final String CACHE_JOB = "job";
+	public static final String CACHE_DATASET_ATTRIBUTES = "attributes";
+	public static final String CACHE_MATCHER = "matcher";
 }

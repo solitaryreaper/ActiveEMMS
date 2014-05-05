@@ -24,6 +24,21 @@ public class Project extends Model {
 	@OneToMany(mappedBy="project")
 	public List<Job> jobs;
 	
+	public Project(String name, String description)
+	{
+		this.name = name;
+		this.description = description;
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("Project [name=").append(name).append(", description=")
+				.append(description).append("]");
+		return builder.toString();
+	}
+
+
 	/**
      * Generic query helper for entity Project with id Long
      */

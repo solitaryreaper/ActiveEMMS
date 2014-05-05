@@ -7,12 +7,17 @@ import java.util.List;
 
 import models.Constants;
 import models.Job;
+import models.Project;
 import models.service.DBService;
+import play.Logger;
+import play.cache.Cache;
 import play.data.DynamicForm;
 import play.mvc.Controller;
 import play.mvc.Http.MultipartFormData;
 import play.mvc.Http.MultipartFormData.FilePart;
 import play.mvc.Result;
+import views.html.job_matching_results;
+import play.cache.Cache;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -23,14 +28,9 @@ import com.walmartlabs.productgenome.rulegenerator.model.analysis.JobEvaluationS
 import com.walmartlabs.productgenome.rulegenerator.model.analysis.RuleEvaluationSummary;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Dataset;
 import com.walmartlabs.productgenome.rulegenerator.model.data.DatasetNormalizerMeta;
-import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair;
 import com.walmartlabs.productgenome.rulegenerator.utils.parser.DataParser;
 import com.walmartlabs.productgenome.rulegenerator.utils.parser.ItemDataParser;
 import com.walmartlabs.productgenome.rulegenerator.utils.parser.ItemPairDataParser;
-
-import views.html.job_matching_results;
-import views.html.itempair_label;
-import play.Logger;
 
 /**
  * Controller class to process the current entity matching job.
@@ -55,8 +55,9 @@ public class JobController extends Controller {
 
     	JobMetadata jobMeta = getJobMetadata(dynamicForm);
     	Job job = new Job(jobMeta.getJobName(), jobMeta.getDescription(), jobMeta.getDatasetName());
+    	job.project = (Project) Cache.get(Constants.CACHE_PROJECT);
     	job.save();
-    	session("job", job.id.toString());
+    	Cache.set(Constants.CACHE_JOB, job);
     	
     	if(isActiveLearner) {
     		return invokeActiveLearner(jobMeta, isItemPairFormat);
@@ -123,6 +124,8 @@ public class JobController extends Controller {
 			parser = new ItemDataParser();
 			dataset = parser.parseData(datasetName, srcFile, tgtFile, goldFile, normalizerMeta);    		
     	}
+    	
+    	Cache.set(Constants.CACHE_DATASET_ATTRIBUTES, dataset.getAttributes());
     	
     	Logger.info("Found " + dataset.getItemPairs().size() + " itempairs ..");    	
     	DBService.loadDataset(dataset);
