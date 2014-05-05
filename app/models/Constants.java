@@ -15,6 +15,10 @@ public class Constants {
 	public static final String PARAM_COVERAGE = "coverage";
 	public static final String PARAM_LEARNING_METHOD = "learning_type";
 	
+	public static final String PARAM_ITEM1_ID = "item1Id";
+	public static final String PARAM_ITEM2_ID = "item2Id";
+	public static final String PARAM_MATCH_STATUS = "match_status";
+	
 	public static final String ACTIVE_LEARNER = "active";
 	public static final String PASSIVE_LEARNER = "passive";
 	

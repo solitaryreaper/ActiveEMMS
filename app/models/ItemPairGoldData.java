@@ -5,6 +5,8 @@ import javax.persistence.Id;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair.MatchStatus;
+
 import play.db.ebean.Model;
 
 @Entity
@@ -18,6 +20,16 @@ public class ItemPairGoldData extends Model {
 	
 	public String item1Id;
 	public String item2Id;
+	
+	public MatchStatus matchStatus;
+	public boolean isLabelledInTrainPhase = true;
+	
+	public ItemPairGoldData(String item1Id, String item2Id, MatchStatus matchStatus) 
+	{
+		this.item1Id = item1Id;
+		this.item2Id = item2Id;
+		this.matchStatus = matchStatus;
+	}
 	
 	@ManyToOne
 	public Job job;

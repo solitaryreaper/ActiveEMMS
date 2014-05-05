@@ -23,6 +23,13 @@ public class ItemData extends Model {
 	@ManyToOne
 	public Job job;
 
+	public ItemData(String itemId, String attribute, String value) {
+		super();
+		this.itemId = itemId;
+		this.attribute = attribute;
+		this.value = value;
+	}
+
 	/**
      * Generic query helper for entity Itemdata with id Long
      */

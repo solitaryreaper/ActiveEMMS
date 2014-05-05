@@ -68,6 +68,14 @@ public class Job extends Model {
 	
 	public JobStatus status = JobStatus.INITIALIZED;
 	
+	public Job(String name, String description, String datasetName) 
+	{
+		super();
+		this.name = name;
+		this.description = description;
+		this.datasetName = datasetName;
+	}
+
 	/**
      * Generic query helper for entity Job with id Long
      */

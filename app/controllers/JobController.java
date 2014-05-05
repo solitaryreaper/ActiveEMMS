@@ -6,6 +6,8 @@ import java.io.File;
 import java.util.List;
 
 import models.Constants;
+import models.Job;
+import models.service.DBService;
 import play.data.DynamicForm;
 import play.mvc.Controller;
 import play.mvc.Http.MultipartFormData;
@@ -28,11 +30,10 @@ import com.walmartlabs.productgenome.rulegenerator.utils.parser.ItemPairDataPars
 
 import views.html.job_matching_results;
 import views.html.itempair_label;
-
 import play.Logger;
 
 /**
- * Controller classe to process the current entity matching job.
+ * Controller class to process the current entity matching job.
  * 
  * @author excelsior
  *
@@ -47,11 +48,28 @@ public class JobController extends Controller {
     public static Result submitJob()
     {
     	DynamicForm dynamicForm = form().bindFromRequest();
-    	Logger.info("PARAMETERS : " + dynamicForm.data().toString());
+    	Logger.info("Job for parameters : " + dynamicForm.data().toString());
     	
     	boolean isActiveLearner = dynamicForm.get(Constants.PARAM_LEARNING_METHOD).equals(Constants.ACTIVE_LEARNER);
     	boolean isItemPairFormat = dynamicForm.get(Constants.PARAM_DATA_FORMAT).equals(Constants.ITEM_PAIR_FILE_FORMAT);
+
+    	JobMetadata jobMeta = getJobMetadata(dynamicForm);
+    	Job job = new Job(jobMeta.getJobName(), jobMeta.getDescription(), jobMeta.getDatasetName());
+    	job.save();
+    	session("job", job.id.toString());
     	
+    	if(isActiveLearner) {
+    		return invokeActiveLearner(jobMeta, isItemPairFormat);
+    	}
+    	else {
+    		return invokePassiveLearner(jobMeta);
+    	}
+    }
+    
+    private static JobMetadata getJobMetadata(DynamicForm dynamicForm)
+    {
+    	boolean isItemPairFormat = dynamicForm.get(Constants.PARAM_DATA_FORMAT).equals(Constants.ITEM_PAIR_FILE_FORMAT);
+
     	JobMetadata jobMeta = new JobMetadata();
     	jobMeta.setDatasetName(dynamicForm.get(Constants.PARAM_DATASET_NAME));
     	jobMeta.setAttributesToEvaluate(dynamicForm.get(Constants.PARAM_ATTRIBUTES_TO_EVALUATE));
@@ -75,20 +93,14 @@ public class JobController extends Controller {
     	jobMeta.setDesiredPrecision(dynamicForm.get(Constants.PARAM_PRECISION));
     	jobMeta.setDesiredCoverage(dynamicForm.get(Constants.PARAM_COVERAGE));
     	
-    	if(isActiveLearner) {
-    		return invokeActiveLearner(jobMeta, isItemPairFormat);
-    	}
-    	else {
-    		return invokePassiveLearner(jobMeta);
-    	}
-
+    	return jobMeta;
     }
     
     /**
      * Invokes an active learning loop to get the data successively labelled and generate matching
      * rules using this labelled data.
      */
-    public static Result invokeActiveLearner(JobMetadata jobMeta, boolean isItemPairFormat)
+    private static Result invokeActiveLearner(JobMetadata jobMeta, boolean isItemPairFormat)
     {
     	Dataset dataset = null;
     	DataParser parser = null;
@@ -112,12 +124,10 @@ public class JobController extends Controller {
 			dataset = parser.parseData(datasetName, srcFile, tgtFile, goldFile, normalizerMeta);    		
     	}
     	
-    	Logger.info("Found " + dataset.getItemPairs().size() + " itempairs ..");
-    	
-    	ItemPair pair = dataset.getItemPairs().get(0);
-    	List<String> attributes = dataset.getAttributes();
-    	
-    	return ok(itempair_label.render(attributes, pair));
+    	Logger.info("Found " + dataset.getItemPairs().size() + " itempairs ..");    	
+    	DBService.loadDataset(dataset);
+
+    	return ItemPairLabelController.labelItemPair();
     }
     
 	private static BiMap<String, String> getSchemaMap(List<String> attributesToEvaluate)
