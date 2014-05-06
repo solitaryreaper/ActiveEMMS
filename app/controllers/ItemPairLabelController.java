@@ -43,7 +43,8 @@ public class ItemPairLabelController extends Controller
 		boolean isTrainPhase = CacheService.isTrainPhase();
 		if(isTrainPhase) {
 			// Retrieve the unlabelled itempair with most entropy for labelling
-			pair = DBService.getBestItemPairToLabel();
+			pair = DBService.getRandomItemPairToLabel();
+			//pair = DBService.getBestItemPairToLabel();
     	}
     	else {
     		// Retrieve any random unlabelled itempair for labelling

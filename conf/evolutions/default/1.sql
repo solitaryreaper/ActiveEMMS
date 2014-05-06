@@ -5,6 +5,7 @@
 
 create table item_data (
   id                        bigint auto_increment not null,
+  datasource_id             integer,
   item_id                   varchar(255),
   attribute                 varchar(255),
   value                     varchar(255),
