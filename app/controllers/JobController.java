@@ -17,7 +17,6 @@ import play.mvc.Http.MultipartFormData;
 import play.mvc.Http.MultipartFormData.FilePart;
 import play.mvc.Result;
 import views.html.job_matching_results;
-import play.cache.Cache;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -72,6 +71,8 @@ public class JobController extends Controller {
     	boolean isItemPairFormat = dynamicForm.get(Constants.PARAM_DATA_FORMAT).equals(Constants.ITEM_PAIR_FILE_FORMAT);
 
     	JobMetadata jobMeta = new JobMetadata();
+    	jobMeta.setJobName(dynamicForm.get(Constants.PARAM_JOB_NAME));
+    	jobMeta.setDescription(dynamicForm.get(Constants.PARAM_JOB_DESCRIPTION));
     	jobMeta.setDatasetName(dynamicForm.get(Constants.PARAM_DATASET_NAME));
     	jobMeta.setAttributesToEvaluate(dynamicForm.get(Constants.PARAM_ATTRIBUTES_TO_EVALUATE));
     	
@@ -103,6 +104,7 @@ public class JobController extends Controller {
      */
     private static Result invokeActiveLearner(JobMetadata jobMeta, boolean isItemPairFormat)
     {
+    	Logger.info("Starting active learning ..");
     	Dataset dataset = null;
     	DataParser parser = null;
     	

@@ -39,8 +39,17 @@ public class DBService
 				++matchedItemPairs;
 			}
 			
+			// Persist item from first source
 			for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
-				ItemData data = new ItemData(itemA.getId(), entry.getKey(), entry.getValue());
+				ItemData data = new ItemData(Constants.DATA_SOURCE1_ID, itemA.getId(), entry.getKey(), entry.getValue());
+				data.job = job;
+				data.save();
+			}
+			
+			// Persist item from second source
+			for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
+				ItemData data = new ItemData(Constants.DATA_SOURCE2_ID, itemA.getId(), entry.getKey(), entry.getValue());
+				data.job = job;
 				data.save();
 			}
 		}
@@ -48,13 +57,20 @@ public class DBService
 		Logger.info("Persisted " + matchedItemPairs + " matched itempairs in db ..");
 	}
 	
+	/**
+	 * Returns the most informative unlabelled itempair whose labelling would add most information to the 
+	 * existing learned model.
+	 */
 	public static ItemPair getBestItemPairToLabel()
 	{
-		
+		return null; // TODO
 	}
 	
+	/**
+	 * Returns a random unlabelled itempair which has to be labelled.
+	 */
 	public static ItemPair getRandomItemPairToLabel()
 	{
-		
+		return null; // TODO
 	}
 }

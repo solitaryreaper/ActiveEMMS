@@ -35,17 +35,20 @@ public class CacheService extends Controller
 	
 	public static boolean isTrainPhase()
 	{
+		boolean isTrainPhase = true;
+		Integer iterationCount = (Integer) Cache.get(Constants.CACHE_ITERATION_COUNTER);
+		if(iterationCount != null) {
+			if(iterationCount >= Constants.NUM_TRAIN_ITERATIONS) {
+				isTrainPhase = false;
+			}
+		}
 		
+		return isTrainPhase;
 	}
 
-	public static boolean isTestingPhaseDone()
-	{
-		
-	}
-	
 	public static boolean isTrainingPhaseDone()
 	{
-		
+		return !isTrainPhase();
 	}
 	
 	public static Learner getMatcher()

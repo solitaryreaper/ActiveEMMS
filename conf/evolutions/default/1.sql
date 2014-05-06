@@ -16,7 +16,10 @@ create table itempair_gold_data (
   id                        bigint auto_increment not null,
   item1id                   varchar(255),
   item2id                   varchar(255),
+  match_status              integer,
+  is_labelled_in_train_phase tinyint(1) default 0,
   job_id                    bigint,
+  constraint ck_itempair_gold_data_match_status check (match_status in (0,1,2)),
   constraint pk_itempair_gold_data primary key (id))
 ;
 

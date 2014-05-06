@@ -20,6 +20,7 @@ import play.cache.Cache;
 public class ProjectController extends Controller {
 
 	public static Result index() {
+		Logger.info("Setting up project ..");
 		CacheService.clearCache();
        	return ok(project_setup.render());
     }
@@ -31,6 +32,7 @@ public class ProjectController extends Controller {
     	String name = dynamicForm.get("project_name");
     	String description = dynamicForm.get("project_desc");
     	
+    	Logger.info("Saving project " + name + " .. ");
     	Project project = new Project(name, description);
     	project.save();
 
