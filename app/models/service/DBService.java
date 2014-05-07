@@ -126,7 +126,7 @@ public class DBService
 	/**
 	 * Returns a random unlabelled itempair which has to be labelled.
 	 */
-	public static ItemPair getRandomItemPairToLabel()
+	public static ItemPair getRandomItemPairToLabel(Long jobId)
 	{
 		Logger.info("Finding random item pair to label ..");
 		String randomItem1FetchSQL = 
@@ -143,21 +143,20 @@ public class DBService
 		
 		Item itemA = getItem(item1Results);
 		Item itemB = getItem(item2Results);
-		MatchStatus matchStatus = getItemPairMatchStatus(itemA.getId(), itemB.getId());
+		MatchStatus matchStatus = getItemPairMatchStatus(itemA.getId(), itemB.getId(), jobId);
 		
 		return new ItemPair(itemA, itemB, matchStatus);
 	}
 	
-	private static MatchStatus getItemPairMatchStatus(String item1Id, String item2Id)
+	private static MatchStatus getItemPairMatchStatus(String item1Id, String item2Id, Long jobId)
 	{
 		MatchStatus status = MatchStatus.UNKNOWN;
-		Job job = (Job) Cache.get(Constants.CACHE_JOB);
-		List<ItemPairGoldData> result1 = ItemPairGoldData.find.where().eq("item1id", item1Id).eq("item2id", item2Id).eq("job_id", job.id).findList();
+		List<ItemPairGoldData> result1 = ItemPairGoldData.find.where().eq("item1id", item1Id).eq("item2id", item2Id).eq("job_id", jobId).findList();
 		if(!(result1 == null || result1.isEmpty())) {
 			status = result1.get(0).matchStatus;
 		}
 		else {
-			List<ItemPairGoldData> result2 = ItemPairGoldData.find.where().eq("item2id", item1Id).eq("item1id", item2Id).eq("job_id", job.id).findList();
+			List<ItemPairGoldData> result2 = ItemPairGoldData.find.where().eq("item2id", item1Id).eq("item1id", item2Id).eq("job_id", jobId).findList();
 			if(!(result2 == null || result2.isEmpty())) {
 				status = result2.get(0).matchStatus;	
 			}

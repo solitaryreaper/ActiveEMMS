@@ -40,13 +40,30 @@
 
             <br>
                                 
-	        <form role="form" method="post" action="/">
+	        <form role="form" method="post" action="/saveItemPair">
 	            <div class="row">
 	                <div class="span4"><button id="match_btn" class="btn btn-large btn-success">YES</button></div>
 	                <div class="span4"><button id="mismatch_btn" class="btn btn-large btn-danger">NO</button></div>
 	                <div class="span4"><button id="unknown_btn" class="btn btn-large btn-warning">NOT SURE</button></div>
 	            </div>
+	            <div id="item1Id" style="display:none">@itempair.getItemA().getId()</div>
+	            <div id="item1Id" style="display:none">@itempair.getItemB().getId()</div>
+	            <div id="match_status" style="display:none"></div>
 	        </form>
         </div>
+        
+        <script type="text/javascript">
+	        $("#match_btn").on("click" , function() {
+	        	$("#match_status").text("match");
+	        }
+	        
+	        $("#mismatch_btn").on("click" , function() {
+	        	$("#match_status").text("mismatch");	        
+	        }
+	        
+	       	$("#unknown_btn").on("click" , function() {
+	        	$("#match_status").text("unknown");	        
+	        }
+        </script>
     </body>
 </html>
