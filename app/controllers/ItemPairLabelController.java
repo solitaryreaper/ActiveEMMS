@@ -42,7 +42,7 @@ public class ItemPairLabelController extends Controller
     	
 //		Job job = (Job) Cache.get(Constants.CACHE_JOB);
 //		Long jobId = job.id;
-		Long jobId = 1L;
+		Long jobId = 3L;
 		List<String> attributes = CacheService.getDatasetAttributes();
 		ItemPair pair = null;
 		boolean isTrainPhase = CacheService.isTrainPhase();
@@ -67,9 +67,11 @@ public class ItemPairLabelController extends Controller
     	
     	String item1Id = dynamicForm.get(Constants.PARAM_ITEM1_ID);
     	String item2Id = dynamicForm.get(Constants.PARAM_ITEM2_ID);
-    	MatchStatus matchStatus = MatchStatus.getMatchStatus(Constants.PARAM_MATCH_STATUS);
+    	MatchStatus matchStatus = 
+			MatchStatus.getMatchStatus(dynamicForm.get(Constants.PARAM_MATCH_STATUS));
     	
     	Logger.info(item1Id + ", " + item2Id + ", " + matchStatus.toString());
+    	
     	// Save this labelled data in database for building subsequent matching models.
     	ItemPairGoldData goldData = new ItemPairGoldData(item1Id, item2Id, matchStatus);
     	//Job job = (Job) Cache.get(Constants.CACHE_JOB);

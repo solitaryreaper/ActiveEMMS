@@ -2,21 +2,17 @@ package models.service;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-import play.Logger;
-import play.cache.Cache;
-import sun.security.jca.GetInstance;
 import models.Constants;
 import models.ItemData;
 import models.ItemPairGoldData;
 import models.Job;
+import play.Logger;
+import play.cache.Cache;
 
 import com.avaje.ebean.Ebean;
-import com.avaje.ebean.ExpressionList;
 import com.avaje.ebean.SqlRow;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.walmartlabs.productgenome.rulegenerator.algos.Learner;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Dataset;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Item;
@@ -36,6 +32,8 @@ public class DBService
 		Logger.info("Loading the dataset into database ..");
 		Job job = (Job) Cache.get(Constants.CACHE_JOB);
 		int matchedItemPairs = 0;
+		int uniqueItemSourceA = 0;
+		int uniqueItemSourceB = 0;
 		for(ItemPair itemPair : dataset.getItemPairs()) {
 			Item itemA = itemPair.getItemA();
 			Item itemB = itemPair.getItemB();
@@ -49,38 +47,40 @@ public class DBService
 				++matchedItemPairs;
 			}
 			
-			// Persist item from first source
-			for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
-				ItemData data = new ItemData(Constants.DATA_SOURCE1_ID, itemA.getId(), entry.getKey(), entry.getValue());
-				data.job = job;
-				
-				boolean isAlreadyInDB = 
-					ItemData.find.where().
-						eq("item_id", itemA.getId()).
-						eq("datasource_id", Constants.DATA_SOURCE1_ID).
-						findRowCount() > 0;
-				if(!isAlreadyInDB) {
-					data.save();					
-				}
+			boolean isItemAAlreadyInDB = ItemData.find.where().
+					eq("item_id", itemA.getId()).
+					eq("datasource_id", Constants.DATA_SOURCE1_ID).
+					findRowCount() > 0;
+						
+			// Persist item from first source, if it is not present already in database ..
+			if(!isItemAAlreadyInDB) {
+				for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
+					ItemData data = new ItemData(Constants.DATA_SOURCE1_ID, itemA.getId(), entry.getKey(), entry.getValue());
+					data.job = job;
+					data.save();
+					++uniqueItemSourceA;
+				}				
 			}
-			
-			// Persist item from second source
-			for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
-				ItemData data = new ItemData(Constants.DATA_SOURCE2_ID, itemA.getId(), entry.getKey(), entry.getValue());
-				data.job = job;
-				
-				boolean isAlreadyInDB = 
-					ItemData.find.where().
-						eq("item_id", itemB.getId()).
-						eq("datasource_id", Constants.DATA_SOURCE2_ID).
-						findRowCount() > 0;
-				if(!isAlreadyInDB) {
-					data.save();					
-				}
+
+			boolean isItemBAlreadyInDB = ItemData.find.where().
+					eq("item_id", itemB.getId()).
+					eq("datasource_id", Constants.DATA_SOURCE2_ID).
+					findRowCount() > 0;
+						
+			// Persist item from second source, if it is not present already in database ..
+			if(!isItemBAlreadyInDB) {
+				for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
+					ItemData data = new ItemData(Constants.DATA_SOURCE2_ID, itemA.getId(), entry.getKey(), entry.getValue());
+					data.job = job;
+					data.save();
+					++uniqueItemSourceB;
+				}				
 			}
 		}
 		
 		Logger.info("Persisted " + matchedItemPairs + " matched itempairs in db ..");
+		Logger.info("Persisted " + uniqueItemSourceA + " unique source A itempairs in db ..");
+		Logger.info("Persisted " + uniqueItemSourceB + " unique source B itempairs in db ..");
 	}
 	
 	/**

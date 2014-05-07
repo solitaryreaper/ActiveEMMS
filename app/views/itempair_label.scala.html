@@ -42,28 +42,30 @@
                                 
 	        <form role="form" method="post" action="/saveItemPair">
 	            <div class="row">
-	                <div class="span4"><button id="match_btn" class="btn btn-large btn-success">YES</button></div>
-	                <div class="span4"><button id="mismatch_btn" class="btn btn-large btn-danger">NO</button></div>
-	                <div class="span4"><button id="unknown_btn" class="btn btn-large btn-warning">NOT SURE</button></div>
+	                <div class="span4"><button type="submit" id="match_btn" class="btn btn-large btn-success">YES</button></div>
+	                <div class="span4"><button type="submit" id="mismatch_btn" class="btn btn-large btn-danger">NO</button></div>
+	                <div class="span4"><button type="submit" id="unknown_btn" class="btn btn-large btn-warning">NOT SURE</button></div>
 	            </div>
-	            <div id="item1Id" style="display:none">@itempair.getItemA().getId()</div>
-	            <div id="item1Id" style="display:none">@itempair.getItemB().getId()</div>
-	            <div id="match_status" style="display:none"></div>
+	            
+	            <input type="text" id="item1Id" name="item1Id" style="display:none" value="@itempair.getItemA().getId()">
+	            <input type="text" id="item2Id" name="item2Id" style="display:none" value="@itempair.getItemB().getId()">
+	            <input type="text" id="match_status" name="match_status" style="display:none" value="unknown">
 	        </form>
         </div>
         
         <script type="text/javascript">
 	        $("#match_btn").on("click" , function() {
-	        	$("#match_status").text("match");
-	        }
+	        	$("#match_status").val("match");
+	        });
 	        
 	        $("#mismatch_btn").on("click" , function() {
-	        	$("#match_status").text("mismatch");	        
-	        }
+	        	$("#match_status").val("mismatch");
+	        });
 	        
 	       	$("#unknown_btn").on("click" , function() {
-	        	$("#match_status").text("unknown");	        
-	        }
+	        	$("#match_status").val("unknown");	        
+	        });
+	       	
         </script>
     </body>
 </html>
