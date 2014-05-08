@@ -17,6 +17,8 @@ public class ItemData extends Model {
 	public Long id;
 	
 	public int datasourceId;
+	
+	public int itemPairId;
 	public String itemId;
 	public String attribute;
 	public String value;
@@ -24,9 +26,10 @@ public class ItemData extends Model {
 	@ManyToOne
 	public Job job;
 
-	public ItemData(int dataSourceId, String itemId, String attribute, String value) {
+	public ItemData(int dataSourceId, int itemPairId, String itemId, String attribute, String value) {
 		super();
 		this.datasourceId = dataSourceId;
+		this.itemPairId = itemPairId;
 		this.itemId = itemId;
 		this.attribute = attribute;
 		this.value = value;

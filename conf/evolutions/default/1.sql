@@ -6,6 +6,7 @@
 create table item_data (
   id                        bigint auto_increment not null,
   datasource_id             integer,
+  item_pair_id              integer,
   item_id                   varchar(255),
   attribute                 varchar(255),
   value                     varchar(255),
@@ -15,6 +16,7 @@ create table item_data (
 
 create table itempair_gold_data (
   id                        bigint auto_increment not null,
+  item_pair_id              integer,
   item1id                   varchar(255),
   item2id                   varchar(255),
   match_status              integer,

@@ -9,19 +9,23 @@ import models.ItemPairGoldData;
 import models.Job;
 import play.Logger;
 import play.cache.Cache;
+import weka.core.Instances;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.SqlRow;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.walmartlabs.productgenome.rulegenerator.algos.Learner;
+import com.walmartlabs.productgenome.rulegenerator.algos.RandomForestLearner;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Dataset;
 import com.walmartlabs.productgenome.rulegenerator.model.data.DatasetNormalizerMeta;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Item;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair.MatchStatus;
 import com.walmartlabs.productgenome.rulegenerator.service.EntropyCalculationService;
+import com.walmartlabs.productgenome.rulegenerator.utils.WekaUtils;
 
 public class DBService 
 {
@@ -43,7 +47,7 @@ public class DBService
 			boolean isMatch = itemPair.getMatchStatus().equals(MatchStatus.MATCH);
 			
 			if(isMatch) {
-				ItemPairGoldData goldData = new ItemPairGoldData(itemA.getId(), itemB.getId(), MatchStatus.MATCH);
+				ItemPairGoldData goldData = new ItemPairGoldData(itemPair.getId(), itemA.getId(), itemB.getId(), MatchStatus.MATCH);
 				goldData.job = job;
 				goldData.save();
 				
@@ -53,12 +57,13 @@ public class DBService
 			boolean isItemAAlreadyInDB = ItemData.find.where().
 					eq("item_id", itemA.getId()).
 					eq("datasource_id", Constants.DATA_SOURCE1_ID).
+					eq("job_id", job.id).
 					findRowCount() > 0;
 						
 			// Persist item from first source, if it is not present already in database ..
 			if(!isItemAAlreadyInDB) {
 				for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
-					ItemData data = new ItemData(Constants.DATA_SOURCE1_ID, itemA.getId(), entry.getKey(), entry.getValue());
+					ItemData data = new ItemData(Constants.DATA_SOURCE1_ID, itemPair.getId(), itemA.getId(), entry.getKey(), entry.getValue());
 					data.job = job;
 					data.save();
 					++uniqueItemSourceA;
@@ -68,12 +73,13 @@ public class DBService
 			boolean isItemBAlreadyInDB = ItemData.find.where().
 					eq("item_id", itemB.getId()).
 					eq("datasource_id", Constants.DATA_SOURCE2_ID).
+					eq("job_id", job.id).					
 					findRowCount() > 0;
 						
 			// Persist item from second source, if it is not present already in database ..
 			if(!isItemBAlreadyInDB) {
-				for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
-					ItemData data = new ItemData(Constants.DATA_SOURCE2_ID, itemB.getId(), entry.getKey(), entry.getValue());
+				for(Map.Entry<String, String> entry : itemB.getAttrMap().entrySet()) {
+					ItemData data = new ItemData(Constants.DATA_SOURCE2_ID, itemPair.getId(), itemB.getId(), entry.getKey(), entry.getValue());
 					data.job = job;
 					data.save();
 					++uniqueItemSourceB;
@@ -102,17 +108,16 @@ public class DBService
 		// in the dataset.
 		if(mostInfoItemPairs == null || mostInfoItemPairs.isEmpty()) {
 			Job currJob = (Job) Cache.get(Constants.CACHE_JOB);
-			List<ItemPair> unlabelledItemPairs = getAllUnlabelledItemPairs(currJob);
-			List<ItemPair> labelledItemPairs = getAllLabelledItemPairs(currJob);
-			
-			learner = getLearnerUsingLabelledData(labelledItemPairs);
-			Cache.set(Constants.CACHE_MATCHER, learner);
+			List<ItemPair> unlabelledItemPairs = getAllUnlabelledItemPairs(currJob.id);
+			List<ItemPair> labelledItemPairs = getAllMatchedItemPairs(currJob.id);
 			
 			List<String> attributes = (List<String>) Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
-			Dataset dataset = new Dataset(currJob.name, attributes, unlabelledItemPairs);
-			DatasetNormalizerMeta normalizerMeta = getDatasetNormalizerMeta(attributes);
-			mostInfoItemPairs = EntropyCalculationService.getTopKInformativeItemPairs(learner, 
-					dataset, normalizerMeta, Constants.NUM_ITEMPAIRS_PER_ITERATION);
+			Dataset labelledData = new Dataset(currJob.name, attributes, labelledItemPairs);
+			learner = getLearnerUsingLabelledData(labelledData);
+			Cache.set(Constants.CACHE_MATCHER, learner);
+
+			Dataset unlabelledData = new Dataset(currJob.name, attributes, unlabelledItemPairs);
+			mostInfoItemPairs = EntropyCalculationService.getTopKInformativeItemPairs(learner, unlabelledData);
 		}
 
 		mostInfoItemPair = mostInfoItemPairs.remove(0);
@@ -120,32 +125,106 @@ public class DBService
 		return mostInfoItemPair;
 	}
 	
-	private static DatasetNormalizerMeta getDatasetNormalizerMeta(List<String> attributes)
+	public static Learner getLearnerUsingLabelledData(Dataset labelledData)
 	{
-		BiMap<String, String> schemaMap = HashBiMap.create();
-		for(String attribute : attributes) {
-			schemaMap.put(attribute, attribute);
+		Logger.info("Dataset : " + labelledData.getItemPairs().size());
+		Logger.info("Attributes : " + labelledData.getAttributes());
+		
+		Instances wekaInstances = WekaUtils.getWekaInstances(labelledData);
+		Logger.info("Found " + wekaInstances.numInstances() + " weka instances for labelled dataset ..");
+		Learner learner = new RandomForestLearner();
+		learner.learnRules(wekaInstances);
+		return learner;
+	}
+	
+	public static List<ItemPair> getAllUnlabelledItemPairs(long jobId)
+	{
+		String fetchUnlabelledPairsSQL = 
+			"SELECT item.item_pair_id, item.datasource_id, item.item_id, item.attribute, item.value " +
+			"FROM item_data item LEFT OUTER JOIN itempair_gold_data gold ON (gold.item_pair_id = item.item_pair_id) " +
+			"WHERE gold.item_pair_id IS NULL AND item.job_id = " + jobId + " ORDER BY item.item_pair_id";
+		Logger.info(fetchUnlabelledPairsSQL);
+		
+		List<SqlRow> unlabelledItemPairsRaw = Ebean.createSqlQuery(fetchUnlabelledPairsSQL).findList();
+		return extractItemPairs(unlabelledItemPairsRaw, MatchStatus.UNKNOWN);
+	}
+
+	public static List<ItemPair> getAllMatchedItemPairs(long jobId)
+	{
+		String fetchMatchedPairsSQL = 
+			"SELECT item.item_pair_id, item.datasource_id, item.item_id, item.attribute, item.value " +
+			"FROM itempair_gold_data gold JOIN item_data item ON (gold.item_pair_id = item.item_pair_id) " +
+			"WHERE gold.match_status = 0 AND item.job_id = " + jobId + " ORDER BY item.item_pair_id";
+		Logger.info(fetchMatchedPairsSQL);
+		
+		List<SqlRow> matchedItemPairsRaw = Ebean.createSqlQuery(fetchMatchedPairsSQL).findList();
+		return extractItemPairs(matchedItemPairsRaw, MatchStatus.MATCH);
+	}
+
+	private static List<ItemPair> extractItemPairs(List<SqlRow> itemPairsRaw, MatchStatus matchStatus)
+	{
+		Logger.info("Raw itempairs from database " + itemPairsRaw.size() + " for match status " + matchStatus.toString());
+		// Group items for the same itempair first
+		Map<Integer, List<SqlRow>> itemPairItemsMap = Maps.newHashMap();
+		for(SqlRow row : itemPairsRaw) {
+			Integer itemPairId = row.getInteger("item_pair_id");
+			List<SqlRow> itemPairItems = null;
+			if(itemPairItemsMap.containsKey(itemPairId)) {
+				itemPairItems = itemPairItemsMap.get(itemPairId);
+			}
+			else {
+				itemPairItems = Lists.newArrayList();
+			}
+			
+			itemPairItems.add(row);
+			itemPairItemsMap.put(itemPairId, itemPairItems);
 		}
-		return new DatasetNormalizerMeta(schemaMap);
+		Logger.info("Found " + itemPairItemsMap.size() + " entries in map ..");
+
+		List<ItemPair> itemPairs = Lists.newArrayList();
+		for(Map.Entry<Integer, List<SqlRow>> entry : itemPairItemsMap.entrySet()) {
+			List<SqlRow> rawItems = entry.getValue();
+			
+			String item1Id = null;
+			String item2Id = null;
+			Map<String, String> item1AttrMap = Maps.newHashMap();
+			Map<String, String> item2AttrMap = Maps.newHashMap();
+			for(SqlRow itemAttrValuePair : rawItems) {
+				String itemId = itemAttrValuePair.getString("item_id");
+				String attribute = itemAttrValuePair.getString("attribute");
+				String value = itemAttrValuePair.getString("value");
+				
+				boolean isItem1Attr = false;
+				if(item1Id == null || item1Id.equals(itemId)) {
+					item1Id = itemId;
+					isItem1Attr = true;
+				}
+				else {
+					item2Id = itemId;
+					isItem1Attr = false;
+				}
+				
+				if(isItem1Attr) {
+					item1AttrMap.put(attribute, value);
+				}
+				else {
+					item2AttrMap.put(attribute, value);
+				}
+			}
+			
+			Logger.info(item1Id + ", " + item2Id);
+			Logger.info(item2AttrMap.toString());
+			
+			Item item1 = new Item(item1Id, item1AttrMap);
+			Item item2 = new Item(item2Id, item2AttrMap);
+			
+			itemPairs.add(new ItemPair(item1, item2, matchStatus));
+		}
+		
+		Logger.info("Found " + itemPairs.size() + " itempairs with status : " + matchStatus.toString());
+		return itemPairs;
 	}
 	
-	private static Learner getLearnerUsingLabelledData(List<ItemPair> labelledItemPairs)
-	{
-		// TODO
-	}
-	
-	private static List<ItemPair> getAllUnlabelledItemPairs(Job job)
-	{
-		List<ItemPair> unlabelledItemPairs = null;
-		return unlabelledItemPairs; // TODO
-	}
-
-	private static List<ItemPair> getAllLabelledItemPairs(Job job)
-	{
-		List<ItemPair> labelledItemPairs = null;
-		return labelledItemPairs; // TODO
-	}
-
 	/**
 	 * Returns a random unlabelled itempair which has to be labelled.
 	 */

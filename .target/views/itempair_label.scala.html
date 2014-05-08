@@ -1,36 +1,74 @@
-@(attributes:List[String], itempair:com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair)
+@(attributes:List[String], itempair:com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair, isTrainPhase:Boolean, numItemPairsLabelled:Integer)
 <html>
     @part_head()
     <body>
         @part_header()
         
-        <!-- Item Pair information -->
-        <table class="table table-striped tabled-condensed">
-            <thead>
-                <tr>
-                    <th>Attribute</th>
-                    <th>Item1 Value</th>
-                    <th>Item2 Value</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for(attribute <- attributes) {
-                    <tr>
-                        <td>@attribute</td>
-                        <td>@itempair.getItemAValByAttr(attribute)</td>
-                        <td>@itempair.getItemBValByAttr(attribute)</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <!-- Instructions for completing this task -->
+        <div id="hit_instructions" class="container">
+            <h3 class="text-center"><b>Do these items match ?</b></h3>
+            <div class="alert alert-info">
+                <h4 class="text-center">
+                    Two items are said to have matched, if they represent exactly the same real world entity.
+                    If in doubt, mark the result to be 'Not Sure'.
+                </h4>
+            </div>            
+        </div>
+               
+        <div class="pull-right">
+            @numItemPairsLabelled examples labelled !! 
+        </div>
+        <hr>
         
-        <form role="form" method="post" action="/">
-            <legend>Are these same items ?</legend>
-            <div class="row">
-                <div class="span4"><button id="match_btn" class="btn btn-success">YES</button></div>
-                <div class="span4"><button id="mismatch_btn" class="btn btn-danger">NO</button></div>
-                <div class="span4"><button id="unknown_btn" class="btn btn-warning">NOT SURE</button></div>
-            </div>
-        </form>
+        <!-- Item Pair information -->
+        <div class="container">
+	        <table class="table tabled-condensed table-bordered table-hover">
+	            <thead>
+	                <tr>
+	                    <th>Attribute</th>
+	                    <th>Item1</th>
+	                    <th>Item2</th>
+	                </tr>
+	            </thead>
+	            <tbody>
+	                @for(attribute <- attributes) {
+	                    <tr>
+	                        <td><i>@attribute</i></td>
+	                        <td>@itempair.getItemAValByAttr(attribute)</td>
+	                        <td>@itempair.getItemBValByAttr(attribute)</td>
+	                    </tr>
+	                }
+	            </tbody>
+	        </table>
+
+            <br>
+                                
+	        <form role="form" method="post" action="/saveItemPair">
+	            <div class="row">
+	                <div class="span4"><button type="submit" id="match_btn" class="btn btn-large btn-success">YES</button></div>
+	                <div class="span4"><button type="submit" id="mismatch_btn" class="btn btn-large btn-danger">NO</button></div>
+	                <div class="span4"><button type="submit" id="unknown_btn" class="btn btn-large btn-warning">NOT SURE</button></div>
+	            </div>
+	            
+	            <input type="text" id="item1Id" name="item1Id" style="display:none" value="@itempair.getItemA().getId()">
+	            <input type="text" id="item2Id" name="item2Id" style="display:none" value="@itempair.getItemB().getId()">
+	            <input type="text" id="match_status" name="match_status" style="display:none" value="unknown">
+	        </form>
+        </div>
+        
+        <script type="text/javascript">
+	        $("#match_btn").on("click" , function() {
+	        	$("#match_status").val("match");
+	        });
+	        
+	        $("#mismatch_btn").on("click" , function() {
+	        	$("#match_status").val("mismatch");
+	        });
+	        
+	       	$("#unknown_btn").on("click" , function() {
+	        	$("#match_status").val("unknown");	        
+	        });
+	       	
+        </script>
     </body>
 </html>
