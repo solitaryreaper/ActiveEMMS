@@ -8,6 +8,7 @@ import java.util.List;
 import models.Constants;
 import models.Job;
 import models.Project;
+import models.service.CacheService;
 import models.service.DBService;
 import play.Logger;
 import play.cache.Cache;
@@ -132,6 +133,8 @@ public class JobController extends Controller {
     	Logger.info("Found " + dataset.getItemPairs().size() + " itempairs ..");    	
     	DBService.loadDataset(dataset);
 
+    	CacheService.initializeActiveLearnerCache();
+    	
     	return ItemPairLabelController.labelItemPair();
     }
     

@@ -41,6 +41,7 @@ public class Constants {
 	public static final String CACHE_MATCHER = "matcher";
 	public static final String CACHE_ITERATION_COUNTER = "iteration";
 	public static final String CACHE_BEST_ITEMPAIRS = "best_itempairs";
+	public static final String CACHE_ITEMPAIRS_LABELLED = "labelled_examples";
 	
 	public static final int NUM_TRAIN_ITERATIONS = 1;
 	public static final int NUM_ITEMPAIRS_PER_ITERATION = 10;

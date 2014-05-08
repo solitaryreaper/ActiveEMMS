@@ -9,6 +9,7 @@ import models.Constants;
 import com.google.common.collect.Lists;
 import com.walmartlabs.productgenome.rulegenerator.algos.Learner;
 
+import play.Logger;
 import play.mvc.Controller;
 import play.cache.*;
 
@@ -45,6 +46,15 @@ public class CacheService extends Controller
 		
 		Cache.remove(Constants.CACHE_DATASET_ATTRIBUTES);
 		Cache.remove(Constants.CACHE_MATCHER);
+		Cache.remove(Constants.CACHE_BEST_ITEMPAIRS);
+		Cache.remove(Constants.CACHE_ITEMPAIRS_LABELLED);
+		Cache.remove(Constants.CACHE_ITERATION_COUNTER);
+	}
+	
+	public static void initializeActiveLearnerCache()
+	{
+    	Cache.set(Constants.CACHE_ITEMPAIRS_LABELLED, 0);
+    	Cache.set(Constants.CACHE_ITERATION_COUNTER, 1);
 	}
 	
 	public static boolean isTrainPhase()
@@ -52,8 +62,9 @@ public class CacheService extends Controller
 		boolean isTrainPhase = true;
 		Integer iterationCount = (Integer) Cache.get(Constants.CACHE_ITERATION_COUNTER);
 		if(iterationCount != null) {
-			if(iterationCount >= Constants.NUM_TRAIN_ITERATIONS) {
+			if(iterationCount > Constants.NUM_TRAIN_ITERATIONS) {
 				isTrainPhase = false;
+				Logger.info("Training phase completed ..");
 			}
 		}
 		

@@ -1,4 +1,4 @@
-@(attributes:List[String], itempair:com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair, isTrainPhase:Boolean)
+@(attributes:List[String], itempair:com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair, isTrainPhase:Boolean, numItemPairsLabelled:Integer)
 <html>
     @part_head()
     <body>
@@ -15,11 +15,14 @@
             </div>            
         </div>
                
+        <div class="pull-right">
+            @numItemPairsLabelled examples labelled !! 
+        </div>
         <hr>
         
         <!-- Item Pair information -->
         <div class="container">
-	        <table class="table tabled-condensed table-bordered">
+	        <table class="table tabled-condensed table-bordered table-hover">
 	            <thead>
 	                <tr>
 	                    <th>Attribute</th>

@@ -12,9 +12,12 @@ import play.cache.Cache;
 
 import com.avaje.ebean.Ebean;
 import com.avaje.ebean.SqlRow;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import com.walmartlabs.productgenome.rulegenerator.algos.Learner;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Dataset;
+import com.walmartlabs.productgenome.rulegenerator.model.data.DatasetNormalizerMeta;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Item;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair.MatchStatus;
@@ -70,7 +73,7 @@ public class DBService
 			// Persist item from second source, if it is not present already in database ..
 			if(!isItemBAlreadyInDB) {
 				for(Map.Entry<String, String> entry : itemA.getAttrMap().entrySet()) {
-					ItemData data = new ItemData(Constants.DATA_SOURCE2_ID, itemA.getId(), entry.getKey(), entry.getValue());
+					ItemData data = new ItemData(Constants.DATA_SOURCE2_ID, itemB.getId(), entry.getKey(), entry.getValue());
 					data.job = job;
 					data.save();
 					++uniqueItemSourceB;
@@ -87,7 +90,8 @@ public class DBService
 	 * Returns the most informative unlabelled itempair whose labelling would add most information to the 
 	 * existing learned model.
 	 */
-	public static ItemPair getBestItemPairToLabel()
+	@SuppressWarnings("unchecked")
+	public static ItemPair getBestItemPairToLabel(Long jobId)
 	{
 		ItemPair mostInfoItemPair = null;
 		List<ItemPair> mostInfoItemPairs = (List<ItemPair>) Cache.get(Constants.CACHE_BEST_ITEMPAIRS);
@@ -101,14 +105,33 @@ public class DBService
 			List<ItemPair> unlabelledItemPairs = getAllUnlabelledItemPairs(currJob);
 			List<ItemPair> labelledItemPairs = getAllLabelledItemPairs(currJob);
 			
-			learner = (Learner) Cache.get(Constants.CACHE_MATCHER);			
+			learner = getLearnerUsingLabelledData(labelledItemPairs);
+			Cache.set(Constants.CACHE_MATCHER, learner);
+			
+			List<String> attributes = (List<String>) Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
+			Dataset dataset = new Dataset(currJob.name, attributes, unlabelledItemPairs);
+			DatasetNormalizerMeta normalizerMeta = getDatasetNormalizerMeta(attributes);
 			mostInfoItemPairs = EntropyCalculationService.getTopKInformativeItemPairs(learner, 
-					unlabelledItemPairs, Constants.NUM_ITEMPAIRS_PER_ITERATION);
+					dataset, normalizerMeta, Constants.NUM_ITEMPAIRS_PER_ITERATION);
 		}
 
 		mostInfoItemPair = mostInfoItemPairs.remove(0);
 		Cache.set(Constants.CACHE_BEST_ITEMPAIRS, mostInfoItemPairs);
 		return mostInfoItemPair;
+	}
+	
+	private static DatasetNormalizerMeta getDatasetNormalizerMeta(List<String> attributes)
+	{
+		BiMap<String, String> schemaMap = HashBiMap.create();
+		for(String attribute : attributes) {
+			schemaMap.put(attribute, attribute);
+		}
+		return new DatasetNormalizerMeta(schemaMap);
+	}
+	
+	private static Learner getLearnerUsingLabelledData(List<ItemPair> labelledItemPairs)
+	{
+		// TODO
 	}
 	
 	private static List<ItemPair> getAllUnlabelledItemPairs(Job job)
