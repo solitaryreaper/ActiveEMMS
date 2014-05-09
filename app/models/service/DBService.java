@@ -1,3 +1,4 @@
+
 package models.service;
 
 import java.util.List;
@@ -98,8 +99,6 @@ public class DBService
 			Cache.set(Constants.CACHE_MATCHER, learner);
 			
 			Logger.info("Found " + labelledItemPairs.size() + " labelled pairs ..");
-			List<String> rules = ((RandomForestLearner)learner).getRules();
-			Logger.info("Rules : " + rules.toString());
 
 			Dataset unlabelledData = new Dataset(currJob.name, attributes, unlabelledItemPairs);
 			mostInfoItemPairs = EntropyCalculationService.getTopKInformativeItemPairs(learner, unlabelledData);

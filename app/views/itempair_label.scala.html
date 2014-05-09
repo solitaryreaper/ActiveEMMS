@@ -1,4 +1,4 @@
-@(attributes:List[String], itempair:com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair, isTrainPhase:Boolean, numItemPairsLabelled:Integer)
+@(datasetName:String, attributes:List[String], itempair:com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair, isTrainPhase:Boolean, numItemPairsLabelled:Integer)
 <html>
     @part_head()
     <body>
@@ -6,18 +6,20 @@
         
         <!-- Instructions for completing this task -->
         <div id="hit_instructions" class="container">
-            <h3 class="text-center"><b>Do these items match ?</b></h3>
-            <div class="alert alert-info">
-                <h4 class="text-center">
-                    Two items are said to have matched, if they represent exactly the same real world entity.
-                    If in doubt, mark the result to be 'Not Sure'.
-                </h4>
+            <h3 class="text-center"><b>Do these @datasetName match <i class="fa fa-question"></i></b></h3>
+            <div class="alert alert-warning">
+                    <h4>Two entities are said to have matched :</h4>
+                    <ul>
+                    	<li>If they represent exactly the same real world entity.</li>
+                    	<li>If in doubt, mark the result to be 'Not Sure'.</li>
+                    </ul> 
             </div>            
         </div>
                
-        <div class="pull-right">
-            @numItemPairsLabelled examples labelled !! 
-        </div>
+        <p class="text-right">
+        	<button class="btn btn-mini btn-info"><i class="icon-ok"></i></button>&nbsp;<b>Training Phase</b> : <i>@numItemPairsLabelled</i> entity pairs labelled. &nbsp;&nbsp;
+        </p>
+	               
         <hr>
         
         <!-- Item Pair information -->
@@ -26,8 +28,8 @@
 	            <thead>
 	                <tr>
 	                    <th>Attribute</th>
-	                    <th>Item1</th>
-	                    <th>Item2</th>
+	                    <th>@datasetName 1</th>
+	                    <th>@datasetName 2</th>
 	                </tr>
 	            </thead>
 	            <tbody>
