@@ -20,13 +20,14 @@ public class DBServiceTest {
 	public void testGetItemPairsFromDB() {
 		running(fakeApplication(), new Runnable() {
 			public void run() {
-				long jobId = 5l;
-				List<ItemPair> unlabelledItemPairs = DBService.getAllUnlabelledItemPairs(jobId);
-				List<ItemPair> labelledItemPairs = DBService.getAllMatchedItemPairs(jobId);
+				long jobId = 2l;
+				//List<ItemPair> unlabelledItemPairs = DBService.getAllUnlabelledItemPairs(jobId);
+				List<ItemPair> labelledItemPairs = DBService.getAllLabelledItemPairs(jobId);
 				
-				Logger.info("Unlabelled itempair : " + unlabelledItemPairs.get(0).getItemB().getAttrMap().toString());
+				//Logger.info("Unlabelled itempair : " + unlabelledItemPairs.get(0).getItemB().getAttrMap().toString());
 				Logger.info("Labelled itempair : " + labelledItemPairs.get(0).getItemB().getAttrMap().toString());
 				
+				/*
 				Logger.info("# Unlabelled Itempairs found : " + unlabelledItemPairs.size());
 				Logger.info("# Labelled itempairs found : " + labelledItemPairs.size());
 				
@@ -45,6 +46,7 @@ public class DBServiceTest {
 				Logger.info("ItemB : " + pair.getItemB().getAttrMap().toString());
 				
 				System.out.println("# Most informative itempairs : " + mostInfoItemPairs.size());
+				*/
 			}
 		});
 	}

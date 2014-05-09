@@ -73,8 +73,6 @@ public class ItemPairLabelController extends Controller
     	MatchStatus matchStatus = 
 			MatchStatus.getMatchStatus(dynamicForm.get(Constants.PARAM_MATCH_STATUS));
     	
-    	Logger.info(item1Id + ", " + item2Id + ", " + matchStatus.toString());
-    	
     	// Save this labelled data in database for building subsequent matching models.
     	ItemPairGoldData goldData = new ItemPairGoldData(item1Id, item2Id, matchStatus);
     	Job job = (Job) Cache.get(Constants.CACHE_JOB);
@@ -82,10 +80,11 @@ public class ItemPairLabelController extends Controller
     	if(!CacheService.isTrainPhase()) {
     		goldData.isLabelledInTrainPhase = false;
     	}
-    	
+
+    	Logger.info(item1Id + ", " + item2Id + ", " + matchStatus.toString() + ", " + goldData.itemPairId);
     	Logger.info("Saving gold data item pair ..");
     	goldData.save();
-    	
+
     	int numItemPairsLabelled = (Integer) Cache.get(Constants.CACHE_ITEMPAIRS_LABELLED) + 1;
     	Cache.set(Constants.CACHE_ITEMPAIRS_LABELLED, numItemPairsLabelled);
     	if(numItemPairsLabelled % Constants.NUM_ITEMPAIRS_PER_ITERATION == 0) {

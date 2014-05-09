@@ -38,10 +38,10 @@ public class ItemPairGoldData extends Model {
 	public ItemPairGoldData(String item1Id, String item2Id, MatchStatus matchStatus) 
 	{
 		super();
-		this.itemPairId = getItemPairId();
 		this.item1Id = item1Id;
 		this.item2Id = item2Id;
 		this.matchStatus = matchStatus;
+		this.itemPairId = getItemPairId();
 	}	
 	
 	@ManyToOne
@@ -52,9 +52,9 @@ public class ItemPairGoldData extends Model {
      */
     public static Finder<Long,ItemPairGoldData> find = new Finder<Long,ItemPairGoldData>(Long.class, ItemPairGoldData.class);
     
-    public int getItemPairId()
+    private int getItemPairId()
     {
-		String id = item1Id + "#" + item2Id;
-		return id.replace(" ", "").trim().hashCode();
+		String itemPairId = this.item1Id + "#" + this.item2Id;
+		return itemPairId.replace(" ", "").trim().hashCode();
     }
 }
