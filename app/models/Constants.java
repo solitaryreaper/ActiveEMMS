@@ -38,6 +38,7 @@ public class Constants {
 	public static final String CACHE_PROJECT = "project";
 	public static final String CACHE_JOB = "job";
 	public static final String CACHE_DATASET_ATTRIBUTES = "attributes";
+	public static final String CACHE_DATASET_FEATURES = "features";
 	public static final String CACHE_MATCHER = "matcher";
 	public static final String CACHE_ITERATION_COUNTER = "iteration";
 	public static final String CACHE_BEST_ITEMPAIRS = "best_itempairs";
@@ -48,4 +49,6 @@ public class Constants {
 	
 	public static final int DATA_SOURCE1_ID = 1;
 	public static final int DATA_SOURCE2_ID = 2;
+	
+	public static final int WEKA_INSTANCE_ITEMPAIR_ATTRIBUTE_ID = 0;
 }

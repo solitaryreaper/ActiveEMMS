@@ -3,6 +3,15 @@
 
 # --- !Ups
 
+create table feature_data (
+  id                        bigint auto_increment not null,
+  item_pair_id              integer,
+  feature_name              varchar(255),
+  feature_value             double,
+  job_id                    bigint,
+  constraint pk_feature_data primary key (id))
+;
+
 create table item_data (
   id                        bigint auto_increment not null,
   datasource_id             integer,
@@ -53,20 +62,24 @@ create table rule (
   constraint pk_rule primary key (id))
 ;
 
-alter table item_data add constraint fk_item_data_job_1 foreign key (job_id) references job (id) on delete restrict on update restrict;
-create index ix_item_data_job_1 on item_data (job_id);
-alter table itempair_gold_data add constraint fk_itempair_gold_data_job_2 foreign key (job_id) references job (id) on delete restrict on update restrict;
-create index ix_itempair_gold_data_job_2 on itempair_gold_data (job_id);
-alter table job add constraint fk_job_project_3 foreign key (project_id) references project (id) on delete restrict on update restrict;
-create index ix_job_project_3 on job (project_id);
-alter table rule add constraint fk_rule_job_4 foreign key (job_id) references job (id) on delete restrict on update restrict;
-create index ix_rule_job_4 on rule (job_id);
+alter table feature_data add constraint fk_feature_data_job_1 foreign key (job_id) references job (id) on delete restrict on update restrict;
+create index ix_feature_data_job_1 on feature_data (job_id);
+alter table item_data add constraint fk_item_data_job_2 foreign key (job_id) references job (id) on delete restrict on update restrict;
+create index ix_item_data_job_2 on item_data (job_id);
+alter table itempair_gold_data add constraint fk_itempair_gold_data_job_3 foreign key (job_id) references job (id) on delete restrict on update restrict;
+create index ix_itempair_gold_data_job_3 on itempair_gold_data (job_id);
+alter table job add constraint fk_job_project_4 foreign key (project_id) references project (id) on delete restrict on update restrict;
+create index ix_job_project_4 on job (project_id);
+alter table rule add constraint fk_rule_job_5 foreign key (job_id) references job (id) on delete restrict on update restrict;
+create index ix_rule_job_5 on rule (job_id);
 
 
 
 # --- !Downs
 
 SET FOREIGN_KEY_CHECKS=0;
+
+drop table feature_data;
 
 drop table item_data;
 

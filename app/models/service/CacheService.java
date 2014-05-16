@@ -2,16 +2,13 @@ package models.service;
 
 import java.util.List;
 
-import javax.swing.text.html.HTML.Attribute;
-
 import models.Constants;
-
-import com.google.common.collect.Lists;
-import com.walmartlabs.productgenome.rulegenerator.algos.Learner;
-
 import play.Logger;
+import play.cache.Cache;
 import play.mvc.Controller;
-import play.cache.*;
+import weka.core.Attribute;
+
+import com.walmartlabs.productgenome.rulegenerator.algos.Learner;
 
 /**
  * Service class to persist state and common objects across different HTTP requests.
@@ -24,18 +21,13 @@ public class CacheService extends Controller
 	@SuppressWarnings("unchecked")
 	public static List<String> getDatasetAttributes()
 	{
-		List<String> attributes = (List<String>) Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
-		if(attributes == null || attributes.isEmpty()) {
-			attributes = Lists.newArrayList();
-			attributes.add("name");
-			attributes.add("addr");
-			attributes.add("city");
-			attributes.add("type");
-			
-			Cache.set(Constants.CACHE_DATASET_ATTRIBUTES, attributes);
-		}
-		
-		return attributes;
+		return (List<String>) Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public static List<Attribute> getInstanceAttributes()
+	{
+		return (List<Attribute>) Cache.get(Constants.CACHE_DATASET_FEATURES);
 	}
 	
 	public static void clearCache()
@@ -45,6 +37,7 @@ public class CacheService extends Controller
 		Cache.remove(Constants.CACHE_JOB);
 		
 		Cache.remove(Constants.CACHE_DATASET_ATTRIBUTES);
+		Cache.remove(Constants.CACHE_DATASET_FEATURES);
 		Cache.remove(Constants.CACHE_MATCHER);
 		Cache.remove(Constants.CACHE_BEST_ITEMPAIRS);
 		Cache.remove(Constants.CACHE_ITEMPAIRS_LABELLED);

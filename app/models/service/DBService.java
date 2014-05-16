@@ -1,14 +1,19 @@
 package models.service;
 
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
 import models.Constants;
+import models.FeatureData;
 import models.ItemData;
 import models.ItemPairGoldData;
 import models.Job;
+import models.utils.DBUtils;
 import play.Logger;
 import play.cache.Cache;
+import weka.core.Attribute;
+import weka.core.Instance;
 import weka.core.Instances;
 
 import com.avaje.ebean.Ebean;
@@ -21,13 +26,16 @@ import com.walmartlabs.productgenome.rulegenerator.model.data.Dataset;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Item;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair.MatchStatus;
-import com.walmartlabs.productgenome.rulegenerator.service.EntropyCalculationService;
 import com.walmartlabs.productgenome.rulegenerator.utils.WekaUtils;
 
 public class DBService 
 {
 	/**
 	 * Loads the dataset into database after converting it in the proper db format.
+	 * 
+	 * This includes :
+	 * 1) Loading the original text data (attribute key-value pairs) into db.
+	 * 2) Loading the feature dataset into db.
 	 * 
 	 * @param dataset
 	 */
@@ -38,6 +46,8 @@ public class DBService
 		int matchedItemPairs = 0;
 		int uniqueItemSourceA = 0;
 		int uniqueItemSourceB = 0;
+		
+		// TODO : Only persist unique items in database. Adding unnecessary overhead ..
 		for(ItemPair itemPair : dataset.getItemPairs()) {
 			Item itemA = itemPair.getItemA();
 			Item itemB = itemPair.getItemB();
@@ -71,6 +81,57 @@ public class DBService
 		Logger.info("Persisted " + matchedItemPairs + " matched itempairs in db ..");
 		Logger.info("Persisted " + uniqueItemSourceA + " unique source A itempairs in db ..");
 		Logger.info("Persisted " + uniqueItemSourceB + " unique source B itempairs in db ..");
+		
+		Logger.info("Persisting features in database ..");
+		loadFeaturesInDB(dataset, job);
+	}
+	
+	/**
+	 * Extracts the features from the original data and persists in the database.
+	 */
+	@SuppressWarnings("unchecked")
+	private static boolean loadFeaturesInDB(Dataset dataset, Job job)
+	{
+		boolean areFeaturesPersisted = true;
+		Instances wekaInstances = WekaUtils.getWekaInstances(dataset);
+		
+		// Save the features in cache. This will be used to create weka instances on fly later ..
+		Enumeration<Attribute> features = wekaInstances.enumerateAttributes();
+		List<Attribute> wekaInstFeatures = Lists.newArrayList();
+		while(features.hasMoreElements()) {
+			wekaInstFeatures.add((Attribute)features.nextElement());
+		}
+		Cache.set(Constants.CACHE_DATASET_FEATURES, wekaInstFeatures);
+		
+		for(Instance instance : wekaInstances) {
+			int itemPairId = (int)instance.value(Constants.WEKA_INSTANCE_ITEMPAIR_ATTRIBUTE_ID);
+			
+			List<String> attributes = (List<String>)Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
+			List<FeatureData> itemPairFeatures = getFeatures(itemPairId, instance, attributes, job);
+			persistItemPairFeatures(itemPairFeatures);
+		}
+		
+		return areFeaturesPersisted;
+	}
+	
+	private static List<FeatureData> getFeatures(int itemPairId, Instance instance, List<String> attributes, Job job)
+	{
+		List<FeatureData> featureDataList = Lists.newArrayList();
+		for(int i=0; i < attributes.size() ; i++) {
+			double featureValue = instance.value(i+1);
+			FeatureData featData = new FeatureData(itemPairId, attributes.get(i), featureValue);
+			featData.job = job;
+			featureDataList.add(featData);
+		}
+		
+		return featureDataList;
+	}
+	
+	private static void persistItemPairFeatures(List<FeatureData> itemPairFeatures)
+	{
+		for(FeatureData featureData : itemPairFeatures) {
+			featureData.save();
+		}
 	}
 	
 	/**
@@ -82,32 +143,42 @@ public class DBService
 	{
 		ItemPair mostInfoItemPair = null;
 		List<ItemPair> mostInfoItemPairs = (List<ItemPair>) Cache.get(Constants.CACHE_BEST_ITEMPAIRS);
-		Learner learner = null;
 		
 		// Check if any informative itempairs from last lot is still left to be labelled. If no,
 		// fetch another lot of most informative itempairs from the remaining unlabelled itempairs
 		// in the dataset.
 		if(mostInfoItemPairs == null || mostInfoItemPairs.isEmpty()) {
 			Job currJob = (Job) Cache.get(Constants.CACHE_JOB);
-			List<ItemPair> unlabelledItemPairs = getAllUnlabelledItemPairs(currJob.id);
-			List<ItemPair> labelledItemPairs = getAllLabelledItemPairs(currJob.id);
-			
 			List<String> attributes = (List<String>) Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
-			Dataset labelledData = new Dataset(currJob.name, attributes, labelledItemPairs);
-			learner = getLearnerUsingLabelledData(labelledData);
-			Cache.set(Constants.CACHE_MATCHER, learner);
-			
-			Logger.info("Found " + labelledItemPairs.size() + " labelled pairs ..");
-			List<String> rules = ((RandomForestLearner)learner).getRules();
-			Logger.info("Rules : " + rules.toString());
-
-			Dataset unlabelledData = new Dataset(currJob.name, attributes, unlabelledItemPairs);
-			mostInfoItemPairs = EntropyCalculationService.getTopKInformativeItemPairs(learner, unlabelledData);
+			mostInfoItemPairs = getTopKMostInformativeItemPairs(currJob, attributes);
 		}
 
 		mostInfoItemPair = mostInfoItemPairs.remove(0);
 		Cache.set(Constants.CACHE_BEST_ITEMPAIRS, mostInfoItemPairs);
 		return mostInfoItemPair;
+	}
+	
+	private static List<ItemPair> getTopKMostInformativeItemPairs(Job currJob, List<String> attributes)
+	{
+		// Learn a matcher using current labelled data
+		Instances labelledInstances = DBUtils.getLabelledInstances(currJob.id);
+		Learner learner = new RandomForestLearner();
+		learner.learnRules(labelledInstances);
+		Cache.set(Constants.CACHE_MATCHER, learner);
+		Logger.info("Learnt matching rules using the labelled data ..");
+		
+		// Find the itempairs with most information using unlabelled data and the current matcher
+		Map<Integer, Instance> itemPairIdInstanceMap = DBUtils.getUnlabelledInstances(currJob.id);
+		Map<Integer, Instance> topKEntropyInstances = DBUtils.getTopKEntropyInstances(learner, 
+				itemPairIdInstanceMap, Constants.NUM_ITEMPAIRS_PER_ITERATION);
+		
+		List<ItemPair> topKEntropyItemPairs = Lists.newArrayList();
+		for(Map.Entry<Integer, Instance> entry : topKEntropyInstances.entrySet()) {
+			ItemPair itemPair = DBUtils.getItemPairById(entry.getKey());
+			topKEntropyItemPairs.add(itemPair);
+		}
+		
+		return topKEntropyItemPairs;
 	}
 	
 	public static Learner getLearnerUsingLabelledData(Dataset labelledData)

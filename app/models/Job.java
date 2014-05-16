@@ -65,6 +65,8 @@ public class Job extends Model {
 	public List<ItemPairGoldData> itemPairGoldData;
 	@OneToMany(mappedBy="job")
 	public List<ItemData> itemData;
+	@OneToMany(mappedBy="job")
+	public List<FeatureData> featureData;
 	
 	public JobStatus status = JobStatus.INITIALIZED;
 	

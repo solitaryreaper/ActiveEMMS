@@ -128,7 +128,7 @@ public class JobController extends Controller {
 			dataset = parser.parseData(datasetName, srcFile, tgtFile, goldFile, normalizerMeta);    		
     	}
     	
-    	Cache.set(Constants.CACHE_DATASET_ATTRIBUTES, dataset.getAttributes());
+    	Cache.set(Constants.CACHE_DATASET_ATTRIBUTES, jobMeta.getAttributesToEvaluate());
     	
     	Logger.info("Found " + dataset.getItemPairs().size() + " itempairs ..");    	
     	DBService.loadDataset(dataset);
