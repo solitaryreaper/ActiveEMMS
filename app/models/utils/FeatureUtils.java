@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import models.FeatureData;
@@ -40,4 +41,14 @@ public class FeatureUtils {
 		return new DenseInstance(1.0, values);
 	}
 
+	public static Attribute getClassAttribute()
+	{
+		List<String> classVal = Lists.newArrayList();
+		classVal.add("match");
+		classVal.add("mismatch");
+		classVal.add("unknown");
+		Attribute classAttr = new Attribute("class",classVal);
+		
+		return classAttr;
+	}
 }

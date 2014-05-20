@@ -9,6 +9,7 @@ import models.ItemPairGoldData;
 import models.Job;
 import models.service.CacheService;
 import models.service.DBService;
+import models.utils.DBUtils;
 import play.Logger;
 import play.cache.Cache;
 import play.data.DynamicForm;
@@ -16,6 +17,7 @@ import play.mvc.Controller;
 import play.mvc.Result;
 import views.html.itempair_label;
 import views.html.rules_display;
+import weka.core.Instances;
 
 import com.google.common.collect.Lists;
 import com.walmartlabs.productgenome.rulegenerator.algos.RandomForestLearner;
@@ -36,22 +38,31 @@ public class ItemPairLabelController extends Controller
 	{
     	// If training phase is done, display the rules learnt
 		if(CacheService.isTrainingPhaseDone()) {
-    		Logger.info("Training Phase completed ..");
+			Job job = (Job) Cache.get(Constants.CACHE_JOB);
+    		Logger.info("Training Phase completed for job " + job.id);
+    		Instances labelledData = DBUtils.getLabelledInstances(job.id);
+    		Logger.info("Found " + labelledData.numInstances() + " labelled instances ..");
+    		DBService.learnMatcher(labelledData);
+    		
     		RandomForestLearner learner = (RandomForestLearner)CacheService.getMatcher();
     		List<Rule> rules = learner.getMatchingRules();
+    		
+    		Logger.info("Showing the learnt rules " + rules.size() + " ..");
+    		for(Rule rule : rules) {
+    			Logger.info(rule.toString());
+    		}
     		return ok(rules_display.render(rules));
     	}
     	
 		Job job = (Job) Cache.get(Constants.CACHE_JOB);
 		Long jobId = job.id;
-		//Long jobId = 8L;
 		List<String> attributes = CacheService.getDatasetAttributes();
 		ItemPair pair = null;
 		boolean isTrainPhase = CacheService.isTrainPhase();
 		if(isTrainPhase) {
 			// Retrieve the unlabelled itempair with most entropy for labelling
-			//pair = DBService.getRandomItemPairToLabel(jobId);
-			pair = DBService.getBestItemPairToLabel(jobId);
+			pair = DBService.getRandomItemPairToLabel(jobId);
+			//pair = DBService.getBestItemPairToLabel(jobId);
     	}
     	else {
     		// Retrieve any random unlabelled itempair for labelling
@@ -95,14 +106,5 @@ public class ItemPairLabelController extends Controller
     	
     	// Once this itempair has been labelled, continue with labelling other itempairs.
     	return labelItemPair();
-	}
-	
-	public static Result test()
-	{
-		List<String> textRules = Lists.newArrayList();
-		textRules.add("IF addr_euclidean >= 0.5 THEN match (2/0)");
-		textRules.add("IF addr_lev >= 0.67 THEN MATCH (2/0)");
-		List<Rule> rules = RuleParser.parseRules(textRules);
-		return ok(rules_display.render(rules));
 	}
 }

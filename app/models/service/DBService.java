@@ -11,6 +11,7 @@ import models.ItemData;
 import models.ItemPairGoldData;
 import models.Job;
 import models.utils.DBUtils;
+import models.utils.FeatureUtils;
 import play.Logger;
 import play.cache.Cache;
 import weka.core.Attribute;
@@ -27,6 +28,7 @@ import com.walmartlabs.productgenome.rulegenerator.model.data.Dataset;
 import com.walmartlabs.productgenome.rulegenerator.model.data.Item;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair;
 import com.walmartlabs.productgenome.rulegenerator.model.data.ItemPair.MatchStatus;
+import com.walmartlabs.productgenome.rulegenerator.model.rule.Rule;
 import com.walmartlabs.productgenome.rulegenerator.utils.WekaUtils;
 
 public class DBService 
@@ -102,6 +104,7 @@ public class DBService
 		while(features.hasMoreElements()) {
 			wekaInstFeatures.add((Attribute)features.nextElement());
 		}
+		wekaInstFeatures.add(FeatureUtils.getClassAttribute());
 		Cache.set(Constants.CACHE_DATASET_FEATURES, wekaInstFeatures);
 		
 		for(Instance instance : wekaInstances) {
@@ -118,8 +121,10 @@ public class DBService
 	private static List<FeatureData> getFeatures(int itemPairId, Instance instance, List<String> attributes, Job job)
 	{
 		List<FeatureData> featureDataList = Lists.newArrayList();
-		for(int i=0; i < attributes.size() ; i++) {
-			double featureValue = instance.value(i+1);
+		
+		// Hack : Skip first attribute which represents the itempair id.
+		for(int i=1; i < attributes.size() ; i++) {
+			double featureValue = instance.value(i);
 			FeatureData featData = new FeatureData(itemPairId, attributes.get(i), featureValue);
 			featData.job = job;
 			featureDataList.add(featData);
@@ -163,10 +168,7 @@ public class DBService
 	{
 		// Learn a matcher using current labelled data
 		Instances labelledInstances = DBUtils.getLabelledInstances(currJob.id);
-		Learner learner = new RandomForestLearner();
-		learner.learnRules(labelledInstances);
-		Cache.set(Constants.CACHE_MATCHER, learner);
-		Logger.info("Learnt matching rules using the labelled data ..");
+		Learner learner = learnMatcher(labelledInstances);
 		
 		// Find the itempairs with most information using unlabelled data and the current matcher
 		Map<Integer, Instance> itemPairIdInstanceMap = DBUtils.getUnlabelledInstances(currJob.id);
@@ -175,11 +177,24 @@ public class DBService
 		
 		List<ItemPair> topKEntropyItemPairs = Lists.newArrayList();
 		for(Map.Entry<Integer, Instance> entry : topKEntropyInstances.entrySet()) {
-			ItemPair itemPair = DBUtils.getItemPairById(entry.getKey());
+			ItemPair itemPair = DBUtils.getItemPairById(entry.getKey(), currJob, MatchStatus.UNKNOWN);
 			topKEntropyItemPairs.add(itemPair);
 		}
 		
 		return topKEntropyItemPairs;
+	}
+	
+	// Learn a matcher using current labelled data
+	public static Learner learnMatcher(Instances labelledData)
+	{
+		Learner learner = new RandomForestLearner();
+		List<Rule> rules = learner.learnRules(labelledData);
+		Cache.set(Constants.CACHE_MATCHER, learner);
+		Logger.info("Rules found : " + rules.size());
+		
+		RandomForestLearner rf = (RandomForestLearner)learner;
+		Logger.info("Learnt " + rf.getRules().size() + " rules ..");
+		return learner;
 	}
 	
 	public static Learner getLearnerUsingLabelledData(Dataset labelledData)
