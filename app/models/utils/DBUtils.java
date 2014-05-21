@@ -151,25 +151,28 @@ public class DBUtils {
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static Instances getLabelledInstances(long jobId)
+	public static Instances getLabelledInstances(long jobId, ArrayList<Attribute> attributes)
 	{
-		ArrayList<Attribute> attributes = (ArrayList<Attribute>) Cache.get(Constants.CACHE_DATASET_FEATURES);
 		Instances instances = getBasicInstances("Labelled Data", attributes);
+		int numInstances = 0;
 		
 		String matchedItemPairsSQL = 
 			" SELECT feature.item_pair_id, feature.feature_name, feature.feature_value"
 			+ " FROM itempair_gold_data gold JOIN feature_data feature "
 			+ " ON (gold.item_pair_id = feature.item_pair_id AND gold.job_id = feature.job_id)"
 			+ " WHERE gold.job_id = " + jobId + " AND gold.match_status IN (0) ORDER BY feature.item_pair_id";
+		Logger.error(matchedItemPairsSQL);
 		List<SqlRow> matchedItemPairsRaw = Ebean.createSqlQuery(matchedItemPairsSQL).findList();
+		Logger.error("Matched : " + matchedItemPairsRaw.size());
 		if(!matchedItemPairsRaw.isEmpty()) {
 			Map<Integer, List<FeatureData>> matchedItemPairs = getFeaturesByItemPair(matchedItemPairsRaw);
+			Logger.error("Map1 : " + matchedItemPairs.size());
 			for(Map.Entry<Integer, List<FeatureData>> entry : matchedItemPairs.entrySet()) {
 				Instance instance = FeatureUtils.getInstance(entry.getValue(), attributes);
 				instance.setDataset(instances);
 				instance.setValue(instances.numAttributes() - 1, "match");
 				instances.add(instance);
+				++numInstances;
 			}			
 		}
 		
@@ -178,18 +181,22 @@ public class DBUtils {
 				+ " FROM itempair_gold_data gold JOIN feature_data feature "
 				+ " ON (gold.item_pair_id = feature.item_pair_id AND gold.job_id = feature.job_id)"
 				+ " WHERE gold.job_id = " + jobId + " AND gold.match_status IN (1) ORDER BY feature.item_pair_id";
-			List<SqlRow> mismatchedItemPairsRaw = Ebean.createSqlQuery(mismatchedItemPairsSQL).findList();
-			if(!mismatchedItemPairsRaw.isEmpty()) {
-				Map<Integer, List<FeatureData>> mismatchedItemPairs = getFeaturesByItemPair(matchedItemPairsRaw);
-				for(Map.Entry<Integer, List<FeatureData>> entry : mismatchedItemPairs.entrySet()) {
-					Instance instance = FeatureUtils.getInstance(entry.getValue(), attributes);
-					instance.setDataset(instances);
-					instance.setValue(instances.numAttributes() - 1, "mismatch");
-					instances.add(instance);
-				}	
-			}
+		Logger.error(mismatchedItemPairsSQL);		
+		List<SqlRow> mismatchedItemPairsRaw = Ebean.createSqlQuery(mismatchedItemPairsSQL).findList();
+		Logger.error("Mismatched : " + mismatchedItemPairsRaw.size());
+		if(!mismatchedItemPairsRaw.isEmpty()) {
+			Map<Integer, List<FeatureData>> mismatchedItemPairs = getFeaturesByItemPair(mismatchedItemPairsRaw);
+			Logger.error("Map2 : " + mismatchedItemPairs.size());
+			for(Map.Entry<Integer, List<FeatureData>> entry : mismatchedItemPairs.entrySet()) {
+				Instance instance = FeatureUtils.getInstance(entry.getValue(), attributes);
+				instance.setDataset(instances);
+				instance.setValue(instances.numAttributes() - 1, "mismatch");
+				instances.add(instance);
+				++numInstances;
+			}	
+		}
 		
-		Logger.info("Found " + instances.numInstances() + " instances in the dataset ..");
+		Logger.info("Found " + instances.numInstances() + " instances in the dataset .. " + numInstances);
 		return instances;
 	}
 	
@@ -236,10 +243,8 @@ public class DBUtils {
 		return classAttr;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static Map<Integer, Instance> getUnlabelledInstances(long jobId)
+	public static Map<Integer, Instance> getUnlabelledInstances(long jobId, ArrayList<Attribute> attributes)
 	{
-		ArrayList<Attribute> attributes = (ArrayList<Attribute>) Cache.get(Constants.CACHE_DATASET_FEATURES);
 		Instances instances = getBasicInstances("Unlabelled Data", attributes);
 		
 		String unlabelledItemPairsSQL = 

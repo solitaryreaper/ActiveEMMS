@@ -25,7 +25,7 @@ public class CacheService extends Controller
 	}
 	
 	@SuppressWarnings("unchecked")
-	public static List<Attribute> getInstanceAttributes()
+	public static List<Attribute> getInstanceFeatures()
 	{
 		return (List<Attribute>) Cache.get(Constants.CACHE_DATASET_FEATURES);
 	}

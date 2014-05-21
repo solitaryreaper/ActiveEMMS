@@ -30,5 +30,16 @@ public class FeatureData extends Model
 		this.featureValue = featureValue;
 	}
 	
+	
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		builder.append("FeatureData [id=").append(id).append(", itemPairId=")
+				.append(itemPairId).append(", featureName=")
+				.append(featureName).append(", featureValue=")
+				.append(featureValue).append(", job=").append(job).append("]");
+		return builder.toString();
+	}
+
 	public static Finder<Long,FeatureData> find = new Finder<Long,FeatureData>(Long.class, FeatureData.class);
 }

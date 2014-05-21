@@ -1,6 +1,7 @@
 
 package models.service;
 
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +52,7 @@ public class DBService
 		int uniqueItemSourceB = 0;
 		
 		// TODO : Only persist unique items in database. Adding unnecessary overhead ..
+		int tempCount = 0;
 		for(ItemPair itemPair : dataset.getItemPairs()) {
 			Item itemA = itemPair.getItemA();
 			Item itemB = itemPair.getItemB();
@@ -78,7 +80,9 @@ public class DBService
 				data.job = job;
 				data.save();
 				++uniqueItemSourceB;
-			}				
+			}
+			
+			++tempCount;
 		}
 		
 		Logger.info("Persisted " + matchedItemPairs + " matched itempairs in db ..");
@@ -106,26 +110,28 @@ public class DBService
 		}
 		wekaInstFeatures.add(FeatureUtils.getClassAttribute());
 		Cache.set(Constants.CACHE_DATASET_FEATURES, wekaInstFeatures);
+		Logger.info("## Features : " + wekaInstFeatures.toString());
 		
 		for(Instance instance : wekaInstances) {
 			int itemPairId = (int)instance.value(Constants.WEKA_INSTANCE_ITEMPAIR_ATTRIBUTE_ID);
 			
-			List<String> attributes = (List<String>)Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
-			List<FeatureData> itemPairFeatures = getFeatures(itemPairId, instance, attributes, job);
+			ArrayList<Attribute> featuresList = (ArrayList<Attribute>)Cache.get(Constants.CACHE_DATASET_FEATURES);
+			List<FeatureData> itemPairFeatures = getFeatures(itemPairId, instance, featuresList, job);
 			persistItemPairFeatures(itemPairFeatures);
 		}
 		
 		return areFeaturesPersisted;
 	}
 	
-	private static List<FeatureData> getFeatures(int itemPairId, Instance instance, List<String> attributes, Job job)
+	private static List<FeatureData> getFeatures(int itemPairId, Instance instance, ArrayList<Attribute> features, Job job)
 	{
 		List<FeatureData> featureDataList = Lists.newArrayList();
 		
-		// Hack : Skip first attribute which represents the itempair id.
-		for(int i=1; i < attributes.size() ; i++) {
+		// Hack : Skip first attribute which represents the itempair id and also last attribute which represents the classification label ..
+		for(int i=1; i < (features.size() - 1) ; i++) {
 			double featureValue = instance.value(i);
-			FeatureData featData = new FeatureData(itemPairId, attributes.get(i), featureValue);
+			String featureName = features.get(i).name();
+			FeatureData featData = new FeatureData(itemPairId, featureName, featureValue);
 			featData.job = job;
 			featureDataList.add(featData);
 		}
@@ -136,7 +142,13 @@ public class DBService
 	private static void persistItemPairFeatures(List<FeatureData> itemPairFeatures)
 	{
 		for(FeatureData featureData : itemPairFeatures) {
-			featureData.save();
+			try {
+				featureData.save();
+			}
+			catch(Exception e) {
+				Logger.error("Failed to save feature : " + featureData.toString());
+			}
+			
 		}
 	}
 	
@@ -155,8 +167,8 @@ public class DBService
 		// in the dataset.
 		if(mostInfoItemPairs == null || mostInfoItemPairs.isEmpty()) {
 			Job currJob = (Job) Cache.get(Constants.CACHE_JOB);
-			List<String> attributes = (List<String>) Cache.get(Constants.CACHE_DATASET_ATTRIBUTES);
-			mostInfoItemPairs = getTopKMostInformativeItemPairs(currJob, attributes);
+			ArrayList<Attribute> features = (ArrayList<Attribute>) Cache.get(Constants.CACHE_DATASET_FEATURES);			
+			mostInfoItemPairs = getTopKMostInformativeItemPairs(currJob, features);
 		}
 
 		mostInfoItemPair = mostInfoItemPairs.remove(0);
@@ -164,14 +176,14 @@ public class DBService
 		return mostInfoItemPair;
 	}
 	
-	private static List<ItemPair> getTopKMostInformativeItemPairs(Job currJob, List<String> attributes)
+	private static List<ItemPair> getTopKMostInformativeItemPairs(Job currJob, ArrayList<Attribute> attributes)
 	{
 		// Learn a matcher using current labelled data
-		Instances labelledInstances = DBUtils.getLabelledInstances(currJob.id);
+		Instances labelledInstances = DBUtils.getLabelledInstances(currJob.id, attributes);
 		Learner learner = learnMatcher(labelledInstances);
 		
 		// Find the itempairs with most information using unlabelled data and the current matcher
-		Map<Integer, Instance> itemPairIdInstanceMap = DBUtils.getUnlabelledInstances(currJob.id);
+		Map<Integer, Instance> itemPairIdInstanceMap = DBUtils.getUnlabelledInstances(currJob.id, attributes);
 		Map<Integer, Instance> topKEntropyInstances = DBUtils.getTopKEntropyInstances(learner, 
 				itemPairIdInstanceMap, Constants.NUM_ITEMPAIRS_PER_ITERATION);
 		
