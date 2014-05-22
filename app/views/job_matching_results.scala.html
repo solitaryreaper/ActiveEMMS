@@ -1,6 +1,4 @@
-@(trainSummary:com.walmartlabs.productgenome.rulegenerator.model.analysis.DatasetEvaluationSummary,
-tuneSummary:com.walmartlabs.productgenome.rulegenerator.model.analysis.DatasetEvaluationSummary,
-testSummary:com.walmartlabs.productgenome.rulegenerator.model.analysis.DatasetEvaluationSummary,
+@(testSummary:com.walmartlabs.productgenome.rulegenerator.model.analysis.DatasetEvaluationSummary,
 topNRules :List[com.walmartlabs.productgenome.rulegenerator.model.analysis.RuleEvaluationSummary])
 
 @import com.walmartlabs.productgenome.rulegenerator.utils.FormatUtils;
@@ -24,71 +22,7 @@ topNRules :List[com.walmartlabs.productgenome.rulegenerator.model.analysis.RuleE
 			<!-- End of Entity Matching Summary Here -->
 	
 			<div class="row">
-				<div class="span4">
-					<table id="train_phase_table" class="table table-striped table-bordered table-condensed table-hover">
-						<thead>
-							<tr>
-								<th colspan="2">Train Phase Summary</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>Total Instances</td>
-								<td>@trainSummary.getTotalInstances()</td>
-							</tr>
-							<tr>
-								<td>True Positives</td>
-								<td>@trainSummary.getTruePositives()</td>
-							</tr>
-							<tr>
-								<td>True Negatives</td>
-								<td>@trainSummary.getTrueNegatives()</td>
-							</tr>
-							<tr>
-								<td>Total Rules</td>
-								<td>@trainSummary.getTotalRules()</td>
-							</tr>
-							<tr>
-								<td>Filtered Rules</td>
-								<td>@trainSummary.getTotalRankedFilteredRules()</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-	
-				<div class="span4 offset2">
-					<table id="tune_phase_table" class="table table-striped table-bordered table-condensed table-hover">
-						<thead>
-							<tr>
-								<th colspan="2">Tune Phase Summary</th>
-							</tr>
-						</thead>
-						<tbody>
-							<tr>
-								<td>Total Instances</td>
-								<td>@tuneSummary.getTotalInstances()</td>
-							</tr>
-							<tr>
-								<td>True Positives</td>
-								<td>@tuneSummary.getTruePositives()</td>
-							</tr>
-							<tr>
-								<td>True Negatives</td>
-								<td>@tuneSummary.getTrueNegatives()</td>
-							</tr>
-							<tr>
-								<td>Total Rules</td>
-								<td>@tuneSummary.getTotalRules()</td>
-							</tr>
-							<tr>
-								<td>Filtered Rules</td>
-								<td>@tuneSummary.getTotalRankedFilteredRules()</td>
-							</tr>
-						</tbody>
-					</table>
-				</div>
-	
-				<div class="span4 offset2">
+				<div class="span12">
 					<table id="test_phase_table" class="table table-striped table-bordered table-condensed table-hover">
 						<thead>
 							<tr>

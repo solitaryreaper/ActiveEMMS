@@ -162,6 +162,7 @@ public class JobController extends Controller {
     	
     	List<RuleEvaluationSummary> topNRules = testPhaseSummary.getRankedRuleSummaries(testPhaseSummary.getRuleSummary());
     	
-    	return ok(job_matching_results.render(trainPhaseSummary, tunePhaseSummary, testPhaseSummary, topNRules));    	
+    	return ok();
+    	//return ok(job_matching_results.render(trainPhaseSummary, tunePhaseSummary, testPhaseSummary, topNRules));    	
     }
 }

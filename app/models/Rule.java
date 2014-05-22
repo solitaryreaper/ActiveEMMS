@@ -6,7 +6,6 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import play.db.ebean.Model;
-import play.db.ebean.Model.Finder;
 
 @Entity
 @Table(name="rule")

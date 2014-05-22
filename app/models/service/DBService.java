@@ -52,7 +52,6 @@ public class DBService
 		int uniqueItemSourceB = 0;
 		
 		// TODO : Only persist unique items in database. Adding unnecessary overhead ..
-		int tempCount = 0;
 		for(ItemPair itemPair : dataset.getItemPairs()) {
 			Item itemA = itemPair.getItemA();
 			Item itemB = itemPair.getItemB();
@@ -82,7 +81,6 @@ public class DBService
 				++uniqueItemSourceB;
 			}
 			
-			++tempCount;
 		}
 		
 		Logger.info("Persisted " + matchedItemPairs + " matched itempairs in db ..");
@@ -221,98 +219,6 @@ public class DBService
 		return learner;
 	}
 	
-	public static List<ItemPair> getAllUnlabelledItemPairs(long jobId)
-	{
-		String fetchUnlabelledPairsSQL = 
-			"SELECT item.item_pair_id, item.datasource_id, item.item_id, item.attribute, item.value " +
-			"FROM item_data item LEFT OUTER JOIN itempair_gold_data gold ON (gold.item_pair_id = item.item_pair_id) " +
-			"WHERE gold.item_pair_id IS NULL AND item.job_id = " + jobId + " ORDER BY item.item_pair_id";
-		Logger.info(fetchUnlabelledPairsSQL);
-		
-		List<SqlRow> unlabelledItemPairsRaw = Ebean.createSqlQuery(fetchUnlabelledPairsSQL).findList();
-		return extractItemPairs(unlabelledItemPairsRaw, MatchStatus.UNKNOWN);
-	}
-
-	public static List<ItemPair> getAllLabelledItemPairs(long jobId)
-	{
-		List<ItemPair> labelledItemPairs = Lists.newArrayList();
-		String fetchMatchedPairsSQL = 
-			"SELECT DISTINCT item.item_pair_id, item.datasource_id, item.item_id, item.attribute, item.value " +
-			"FROM itempair_gold_data gold JOIN item_data item ON (gold.item_pair_id = item.item_pair_id) " +
-			"WHERE gold.match_status = 0 AND item.job_id = " + jobId + " ORDER BY item.item_pair_id";
-		Logger.info(fetchMatchedPairsSQL);
-		List<SqlRow> matchedItemPairsRaw = Ebean.createSqlQuery(fetchMatchedPairsSQL).findList();
-		if(!(matchedItemPairsRaw == null || matchedItemPairsRaw.isEmpty())) {
-			List<ItemPair> matchedItemPairs = extractItemPairs(matchedItemPairsRaw, MatchStatus.MATCH);
-			labelledItemPairs.addAll(matchedItemPairs);
-		}
-
-		String fetchMismatchedPairsSQL = 
-				"SELECT DISTINCT item.item_pair_id, item.datasource_id, item.item_id, item.attribute, item.value " +
-				"FROM itempair_gold_data gold JOIN item_data item ON (gold.item_pair_id = item.item_pair_id) " +
-				"WHERE gold.match_status = 1 AND item.job_id = " + jobId + " ORDER BY item.item_pair_id";
-		Logger.info(fetchMismatchedPairsSQL);
-		List<SqlRow> mismatchedItemPairsRaw = Ebean.createSqlQuery(fetchMatchedPairsSQL).findList();
-		if(!(mismatchedItemPairsRaw == null || mismatchedItemPairsRaw.isEmpty())) {
-			List<ItemPair> mismatchedItemPairs = extractItemPairs(mismatchedItemPairsRaw, MatchStatus.MISMATCH);
-			labelledItemPairs.addAll(mismatchedItemPairs);
-		}
-		
-		Logger.info("Found " + labelledItemPairs.size() + " labelled itempairs ..");
-		return labelledItemPairs;
-	}
-
-	private static List<ItemPair> extractItemPairs(List<SqlRow> itemPairsRaw, MatchStatus matchStatus)
-	{
-		// Group items for the same itempair first
-		Map<Integer, List<SqlRow>> itemPairItemsMap = Maps.newHashMap();
-		for(SqlRow row : itemPairsRaw) {
-			Integer itemPairId = row.getInteger("item_pair_id");
-			List<SqlRow> itemPairItems = null;
-			if(itemPairItemsMap.containsKey(itemPairId)) {
-				itemPairItems = itemPairItemsMap.get(itemPairId);
-			}
-			else {
-				itemPairItems = Lists.newArrayList();
-			}
-			
-			itemPairItems.add(row);
-			itemPairItemsMap.put(itemPairId, itemPairItems);
-		}
-
-		List<ItemPair> itemPairs = Lists.newArrayList();
-		for(Map.Entry<Integer, List<SqlRow>> entry : itemPairItemsMap.entrySet()) {
-			List<SqlRow> rawItems = entry.getValue();
-			
-			String item1Id = null;
-			String item2Id = null;
-			Map<String, String> item1AttrMap = Maps.newHashMap();
-			Map<String, String> item2AttrMap = Maps.newHashMap();
-			for(SqlRow itemAttrValuePair : rawItems) {
-				String itemId = itemAttrValuePair.getString("item_id");
-				String attribute = itemAttrValuePair.getString("attribute");
-				String value = itemAttrValuePair.getString("value");
-				Integer dataSourceId = itemAttrValuePair.getInteger("datasource_id");
-				
-				if(dataSourceId.equals(Constants.DATA_SOURCE1_ID)) {
-					item1Id = itemId;
-					item1AttrMap.put(attribute, value);
-				}
-				else {
-					item2Id = itemId;
-					item2AttrMap.put(attribute, value);
-				}
-			}
-			
-			Item item1 = new Item(item1Id, item1AttrMap);
-			Item item2 = new Item(item2Id, item2AttrMap);
-			
-			itemPairs.add(new ItemPair(item1, item2, matchStatus));
-		}
-		
-		return itemPairs;
-	}
-	
 	/**
 	 * Returns a random unlabelled itempair which has to be labelled.
 	 */
@@ -321,12 +227,15 @@ public class DBService
 		Logger.info("Finding random item pair to label ..");
 		String randomItem1FetchSQL = 
 			"select distinct data.item_id, data.attribute, data.value "
-			+ "from item_data data join (select item_id from item_data where datasource_id = 1 order by rand() limit 1) src1 "
-			+ "on (data.item_id = src1.item_id) ";
+			+ "from item_data data join (select item_id from item_data where datasource_id = 1 AND job_id = " + jobId + " order by rand() limit 1) src1 "
+			+ "on (data.item_id = src1.item_id) WHERE data.job_id = " + jobId;
+		Logger.error(randomItem1FetchSQL);
+		
 		String randomItem2FetchSQL =
 			"select distinct data.item_id, data.attribute, data.value from item_data data join "
-			+ "(select item_id from item_data where datasource_id = 2 order by rand() limit 1) src2 "
-			+ "on (data.item_id = src2.item_id)";
+			+ "(select item_id from item_data where datasource_id = 2 AND job_id = " + jobId + " order by rand() limit 1) src2 "
+			+ "on (data.item_id = src2.item_id) WHERE data.job_id = " + jobId;
+		Logger.error(randomItem2FetchSQL);
 
 		List<SqlRow> item1Results = Ebean.createSqlQuery(randomItem1FetchSQL).findList();
 		List<SqlRow> item2Results = Ebean.createSqlQuery(randomItem2FetchSQL).findList();

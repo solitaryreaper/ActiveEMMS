@@ -9,7 +9,6 @@ import models.Constants;
 import models.FeatureData;
 import models.Job;
 import play.Logger;
-import play.cache.Cache;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -151,22 +150,38 @@ public class DBUtils {
 		}
 	}
 	
+	/**
+	 * Returns all the labelled instances by crowd for a specific matching job .. 
+	 */
 	public static Instances getLabelledInstances(long jobId, ArrayList<Attribute> attributes)
+	{
+		return getLabelledInstances(jobId, attributes, false);
+	}
+	
+	/**
+	 * Returns labelled instances by crowd for a specific matching job. A filter option to return
+	 * only the instances labelled during testing phase is also provided.
+	 */
+	public static Instances getLabelledInstances(long jobId, ArrayList<Attribute> attributes, boolean onlyTestPhaseLabelled)
 	{
 		Instances instances = getBasicInstances("Labelled Data", attributes);
 		int numInstances = 0;
 		
-		String matchedItemPairsSQL = 
+		String phaseFilter = onlyTestPhaseLabelled ? " AND gold.is_labelled_in_train_phase = 0 " : "";
+		
+		String labelledItemPairsSQL = 
 			" SELECT feature.item_pair_id, feature.feature_name, feature.feature_value"
 			+ " FROM itempair_gold_data gold JOIN feature_data feature "
-			+ " ON (gold.item_pair_id = feature.item_pair_id AND gold.job_id = feature.job_id)"
-			+ " WHERE gold.job_id = " + jobId + " AND gold.match_status IN (0) ORDER BY feature.item_pair_id";
+			+ " ON (gold.item_pair_id = feature.item_pair_id AND gold.job_id = feature.job_id)";
+						
+		String matchedItemPairsSQL = 
+				labelledItemPairsSQL + 
+				" WHERE gold.job_id = " + jobId + " AND gold.match_status IN (0) " + phaseFilter +
+				" ORDER BY feature.item_pair_id";
 		Logger.error(matchedItemPairsSQL);
 		List<SqlRow> matchedItemPairsRaw = Ebean.createSqlQuery(matchedItemPairsSQL).findList();
-		Logger.error("Matched : " + matchedItemPairsRaw.size());
 		if(!matchedItemPairsRaw.isEmpty()) {
 			Map<Integer, List<FeatureData>> matchedItemPairs = getFeaturesByItemPair(matchedItemPairsRaw);
-			Logger.error("Map1 : " + matchedItemPairs.size());
 			for(Map.Entry<Integer, List<FeatureData>> entry : matchedItemPairs.entrySet()) {
 				Instance instance = FeatureUtils.getInstance(entry.getValue(), attributes);
 				instance.setDataset(instances);
@@ -177,16 +192,13 @@ public class DBUtils {
 		}
 		
 		String mismatchedItemPairsSQL = 
-				" SELECT feature.item_pair_id, feature.feature_name, feature.feature_value"
-				+ " FROM itempair_gold_data gold JOIN feature_data feature "
-				+ " ON (gold.item_pair_id = feature.item_pair_id AND gold.job_id = feature.job_id)"
-				+ " WHERE gold.job_id = " + jobId + " AND gold.match_status IN (1) ORDER BY feature.item_pair_id";
+				labelledItemPairsSQL + 
+				" WHERE gold.job_id = " + jobId + " AND gold.match_status IN (1) " + phaseFilter +
+				" ORDER BY feature.item_pair_id";
 		Logger.error(mismatchedItemPairsSQL);		
 		List<SqlRow> mismatchedItemPairsRaw = Ebean.createSqlQuery(mismatchedItemPairsSQL).findList();
-		Logger.error("Mismatched : " + mismatchedItemPairsRaw.size());
 		if(!mismatchedItemPairsRaw.isEmpty()) {
 			Map<Integer, List<FeatureData>> mismatchedItemPairs = getFeaturesByItemPair(mismatchedItemPairsRaw);
-			Logger.error("Map2 : " + mismatchedItemPairs.size());
 			for(Map.Entry<Integer, List<FeatureData>> entry : mismatchedItemPairs.entrySet()) {
 				Instance instance = FeatureUtils.getInstance(entry.getValue(), attributes);
 				instance.setDataset(instances);
@@ -196,8 +208,8 @@ public class DBUtils {
 			}	
 		}
 		
-		Logger.info("Found " + instances.numInstances() + " instances in the dataset .. " + numInstances);
-		return instances;
+		Logger.info("Found " + instances.numInstances() + " instances in the dataset : " + numInstances);
+		return instances;		
 	}
 	
 	private static Instances getBasicInstances(String label, ArrayList<Attribute> attributes)
@@ -230,17 +242,6 @@ public class DBUtils {
 		}
 		
 		return featuresByItemPair;
-	}
-	
-	private static Attribute getClassAttribute()
-	{
-		List<String> classVal = Lists.newArrayList();
-		classVal.add("match");
-		classVal.add("mismatch");
-		classVal.add("unknown");
-		Attribute classAttr = new Attribute("class",classVal);
-		
-		return classAttr;
 	}
 	
 	public static Map<Integer, Instance> getUnlabelledInstances(long jobId, ArrayList<Attribute> attributes)

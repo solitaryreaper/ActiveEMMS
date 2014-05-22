@@ -40,12 +40,16 @@ public class Constants {
 	public static final String CACHE_DATASET_ATTRIBUTES = "attributes";
 	public static final String CACHE_DATASET_FEATURES = "features";
 	public static final String CACHE_MATCHER = "matcher";
-	public static final String CACHE_ITERATION_COUNTER = "iteration";
+	public static final String CACHE_TRAIN_ITERATION_COUNTER = "iteration";
+	public static final String CACHE_TEST_ITEMPAIRS_LABELLED = "test_labelled_examples";
 	public static final String CACHE_BEST_ITEMPAIRS = "best_itempairs";
 	public static final String CACHE_ITEMPAIRS_LABELLED = "labelled_examples";
+	public static final String CACHE_RULES = "rules";
+	public static final String CACHE_PHASE = "phase";
 	
 	public static final int NUM_TRAIN_ITERATIONS = 1;
 	public static final int NUM_ITEMPAIRS_PER_ITERATION = 10;
+	public static final int NUM_ITEMPAIRS_TO_LABEL_IN_TEST_PHASE = 10;
 	
 	public static final int DATA_SOURCE1_ID = 1;
 	public static final int DATA_SOURCE2_ID = 2;
